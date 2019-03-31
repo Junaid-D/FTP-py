@@ -12,6 +12,7 @@ class myThread (threading.Thread):
         self.dest=dest
         self.user=''
         self.password=''
+        self.open=True
         self.authorized=False
     def run(self):
         self.runServer()
@@ -25,25 +26,27 @@ class myThread (threading.Thread):
         if(self.authorized==False):#greeting
             self.USER()
         if(self.authorized==True):
-            while 1:
+            while 1 & self.open==True:
                 rec_data=self.conSoc.recv(1024)
                 decoded=rec_data.decode('ascii')
                 if not rec_data:
                     break     
 
                 receivedData=self.parseCommand(decoded)    
-                print("Received",rec_data.decode('ascii'))
-                if receivedData[1]=='PASV':
-                    self.PASV()
+                print("Received",receivedData)
+                if receivedData[0]=='QUIT':
+                    self.QUIT()
+    print('Server is shutting down.')                
 
     def parseCommand(self,recCommand):
         splitStr=recCommand[:-2]
         splitStr=splitStr.split(' ',3)
-        print(len(splitStr))
+        if len(splitStr) == 1:
+            return [splitStr[0],'']
         return splitStr
             
     def USER(self):
-        greeting= '220 Service ready for new user'
+        greeting= '220 Service ready for new user \r\n'
         self.conSoc.sendall(greeting.encode('ascii'))
         rec_data=self.conSoc.recv(1024)
         response=self.parseCommand(rec_data.decode('ascii'))
@@ -54,7 +57,10 @@ class myThread (threading.Thread):
             response = '200 User logged in, proceed.'
             self.conSoc.sendall(response.encode('ascii'))
 
-    def PASV(self):
+    def QUIT(self):
+        response='221 Service closing control connection \r\n'
+        self.conSoc.sendall(response.encode('ascii'))
+        self.open=False
 
 
                 
