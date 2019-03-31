@@ -36,6 +36,8 @@ class myThread (threading.Thread):
                 print("Received",receivedData)
                 if receivedData[0]=='QUIT':
                     self.QUIT()
+                if receivedData[0]=='PORT':
+                    self.PORT(receivedData[1])
     print('Server is shutting down.')                
 
     def parseCommand(self,recCommand):
@@ -61,6 +63,10 @@ class myThread (threading.Thread):
         response='221 Service closing control connection \r\n'
         self.conSoc.sendall(response.encode('ascii'))
         self.open=False
+
+    def PORT(self,args):
+        print(args)
+        
 
 
                 

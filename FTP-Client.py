@@ -44,7 +44,9 @@ class FTPClient():
 
     def parseCommand(self,command):
         if (command=='QUIT'):
-            self.QUIT()
+            self.QUIT() 
+        elif (command=='PORT'):
+                self.PORT()
         else:
             print('Invalid Command')
 
@@ -58,6 +60,23 @@ class FTPClient():
             self.open=False
             print('Connection closed by server.')
             self.conSoc.close()
+
+    def PORT(self):
+        print('Requesting data port')
+        ip=''
+        while ip.count('.')!=3:
+            ip=input('IP use . as separator?\n')
+        splitIP=ip.split('.')
+        portNo=input('Port no: ?\n')
+        port1=int(portNo)//256
+        port2=int(portNo)%256
+        #ip
+        sequence=splitIP[0]+','+splitIP[1]+','+splitIP[2]+','+splitIP[3]    
+        #port
+        sequence=sequence+','+str(port1)+','+str(port2)
+        message='PORT '+sequence+'\r\n'
+        print('C %s'%message)
+        self.conSoc.sendall(message.encode('ascii'))
         
 
 
