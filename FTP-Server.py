@@ -53,8 +53,12 @@ class myThread (threading.Thread):
                     self.TYPE(receivedData[1])
                 if receivedData[0]=='STOR':
                     self.STOR(receivedData[1])
-
-
+                if receivedData[0]=='SYST':
+                    self.SYST()
+                if receivedData[0]=='FEAT':
+                    self.FEAT()
+                if receivedData[0]=='PWD':
+                    self.PWD(receivedData[1])
 
     print('Server is shutting down.')                
 
@@ -171,7 +175,17 @@ class myThread (threading.Thread):
         self.dataSoc=None
         return
 
-                
+    def SYST(self):
+        response='200 Windows\r\n'
+        self.conSoc.sendall(response.encode('ascii'))   
+
+    def FEAT(self):
+        response='211 RETR PORT\r\n'
+        self.conSoc.sendall(response.encode('ascii'))     
+    
+    def PWD(self,password):
+        response='200 Success\r\n'
+        self.conSoc.sendall(response.encode('ascii'))  
 
 with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as soc:
     #welcoming socket
@@ -184,3 +198,4 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as soc:
         print("New Client at: %s"%str(addr))
         threadi=myThread(0,s1,addr)
         threadi.start()
+

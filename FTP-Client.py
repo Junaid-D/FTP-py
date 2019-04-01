@@ -1,4 +1,5 @@
 import socket
+from tkinter import *
 
 ServerIP='127.0.0.1'
 port = 4500
@@ -103,7 +104,7 @@ class FTPClient():
         return    
 
     def RETR(self):#stream--server will close connection, block-- eof block will be sent
-        if(self.passiveIP=='' and self.dataSoc==None):
+        if(self.passiveIP==None and self.dataSoc==None):
             print('No data connection was set up')
             return
         
@@ -139,7 +140,7 @@ class FTPClient():
             return
 
     def STOR(self):
-        if(self.passiveIP=='' and self.dataSoc==None):
+        if(self.passiveIP==None and self.dataSoc==None):
             print('No data connection was set up')
             return
         
@@ -209,14 +210,17 @@ class FTPClient():
         self.dataSoc=None
         return
     
-        
-       
 
+thisClient=FTPClient()
+
+       
+# window = Tk()
+# window.title("FTP Client") 
+# window.geometry('640x480')
+# btn = Button(window, text="Login",command=thisClient.login)
+# btn.grid(column=1, row=0)
+# window.mainloop()
     
 
 
-        
-
-
-thisClient=FTPClient()
 thisClient.run()
