@@ -102,7 +102,6 @@ class FTPClient():
             print('Error with parameters, retuning to menu..')
         return    
 
-
     def RETR(self):#stream--server will close connection, block-- eof block will be sent
         if(self.passiveIP=='' and self.dataSoc==None):
             print('No data connection was set up')
@@ -128,10 +127,6 @@ class FTPClient():
             newFile.close()        
             print('Transfer complete')
             
-
-                    
-
-
             serverResp=self.conSoc.recv(1024).decode('ascii')
             print('S %s'%serverResp)
             self.CloseDataSocket()
@@ -142,19 +137,56 @@ class FTPClient():
             self.dataSoc.close()
             self.dataSoc=None
             return
-        
-        
-    def CloseDataSocket(self):
-        self.dataSoc.shutdown(socket.SHUT_RDWR)
-        self.dataSoc.close()
-        self.dataSoc=None
-        return
 
     def STOR(self):
-        return
+        if(self.passiveIP=='' and self.dataSoc==None):
+            print('No data connection was set up')
+            return
+        
+        filename=input('Input filename\n')
+        
+        filenameOnServer=input('Called on server?\n')
+        message='STOR '+filenameOnServer+'\r\n'
+        print('C %s'%message)
+        self.conSoc.sendall(message.encode('ascii'))
+        serverResp=self.conSoc.recv(1024).decode('ascii')
+        print('S %s'%serverResp)
 
+        if(self.dataSoc!=None):##Assume active
 
+            self.dataSoc.listen()
+            s1,addr=self.dataSoc.accept()
+
+            with open(filename,'rb') as f:##read as binary
+                toSend=f.read(1024)#using send for now instead of sendall
+                while (toSend):
+                    s1.send(toSend)
+                    toSend=f.read(1024)
+            
+            s1.shutdown(socket.SHUT_RDWR)
+            s1.close()
+  
+            serverResp=self.conSoc.recv(1024).decode('ascii')
+            print('S %s'%serverResp)
+  
+
+            self.CloseDataSocket()
+            return
+
+        if(self.passiveIP!=None):##Assume Passive
+            self.dataSoc.close()
+            self.dataSoc=None
+            return
+ 
     def TYPE(self):
+        type=''
+        while(len(type)!=1):
+            type=input('Type?\n')
+        message='TYPE '+type+'\r\n'
+        print('C %s'%message)
+        self.conSoc.sendall(message.encode('ascii'))
+        serverResp=self.conSoc.recv(1024).decode('ascii')
+        print('S %s'%serverResp)
         return
 
 
@@ -171,9 +203,11 @@ class FTPClient():
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
         return
-
-
-    
+    def CloseDataSocket(self):
+        #self.dataSoc.shutdown(socket.SHUT_RDWR)
+        self.dataSoc.close()
+        self.dataSoc=None
+        return
     
         
        
