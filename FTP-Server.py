@@ -1,6 +1,8 @@
 import socket
 import threading
 import time
+import os
+
 host = '127.0.0.1'
 port = 4500
 
@@ -41,6 +43,13 @@ class myThread (threading.Thread):
                     self.QUIT()
                 if receivedData[0]=='PORT':
                     self.PORT(receivedData[1])
+                if receivedData[0]=='NOOP':
+                    self.NOOP()
+                if receivedData[0]=='RETR':
+                    self.RETR(receivedData[1])
+
+
+
     print('Server is shutting down.')                
 
     def parseCommand(self,recCommand):
@@ -79,8 +88,39 @@ class myThread (threading.Thread):
         self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.activeIP=ip
         self.activePort=port
-        #do not 
+        #do not use data port immediately
+    
+    def NOOP(self):
+        response = '200 NOOP Done\r\n'
+        self.conSoc.sendall(response.encode('ascii'))
+    
+    def RETR(self,filename):
+        
+        ###active
+        if(self.activeIP!=''):
+            transferAccept='250 Accepted\r\n'
+            self.conSoc.sendall(transferAccept.encode('ascii'))
 
+            self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            self.dataSoc.connect((self.activeIP,self.activePort))
+            with open(filename,'rb') as f:##read as binary
+                toSend=f.read(1024)#using send for now instead of sendall
+                while toSend.decode('ascii') !='':
+                    self.dataSoc.send(toSend)
+                    toSend=f.read(1024)
+            self.CloseDataSoc()
+            self.activeIP=''
+            self.activePort=0
+            doneTransfer='226 Done\r\n'
+            self.conSoc.sendall(doneTransfer.encode('ascii'))
+
+       ###passive
+
+    def CloseDataSoc(self):
+        self.dataSoc.shutdown(socket.SHUT_RDWR)
+        self.dataSoc.close()
+        self.dataSoc=None
+        return
 
                 
 

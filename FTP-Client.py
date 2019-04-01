@@ -48,7 +48,19 @@ class FTPClient():
         if (command=='QUIT'):
             self.QUIT() 
         elif (command=='PORT'):
-                self.PORT()
+            self.PORT()
+        elif (command=='TYPE'):
+            self.TYPE()
+        elif (command=='MODE'):
+            self.MODE()
+        elif (command=='STRU'):
+            self.STRU()
+        elif (command=='RETR'):
+            self.RETR()
+        elif (command=='STOR'):
+            self.STOR()
+        elif (command=='NOOP'):
+            self.NOOP()     
         else:
             print('Invalid Command')
 
@@ -62,6 +74,7 @@ class FTPClient():
             self.open=False
             print('Connection closed by server.')
             self.conSoc.close()
+            return
 
     def PORT(self):
         print('Requesting data port')
@@ -87,8 +100,81 @@ class FTPClient():
         print('S %s'%serverResp)
         if(serverResp.startswith('5')):
             print('Error with parameters, retuning to menu..')
-            return
         return    
+
+
+    def RETR(self):#stream--server will close connection, block-- eof block will be sent
+        if(self.passiveIP=='' and self.dataSoc==None):
+            print('No data connection was set up')
+            return
+        
+        filename=input('Input filename\n')
+        message='RETR '+filename+'\r\n'
+        print('C %s'%message)
+        self.conSoc.sendall(message.encode('ascii'))
+        serverResp=self.conSoc.recv(1024).decode('ascii')
+        print('S %s'%serverResp)
+
+        if(self.dataSoc!=None):##Assume active
+            self.dataSoc.listen()
+            s1,addr=self.dataSoc.accept()
+            newFile=open('new_'+filename,'wb')
+
+            while 1:
+                data=s1.recv(1024)
+                if (not data): break##meaning the connection is closed in an 'orderly' way
+                newFile.write(data)
+            
+            newFile.close()        
+            print('Transfer complete')
+            
+
+                    
+
+
+            serverResp=self.conSoc.recv(1024).decode('ascii')
+            print('S %s'%serverResp)
+            self.CloseDataSocket()
+            return
+
+        if(self.passiveIP!=None):##Assume Passive
+
+            self.dataSoc.close()
+            self.dataSoc=None
+            return
+        
+        
+    def CloseDataSocket(self):
+        self.dataSoc.shutdown(socket.SHUT_RDWR)
+        self.dataSoc.close()
+        self.dataSoc=None
+        return
+
+    def STOR(self):
+        return
+
+
+    def TYPE(self):
+        return
+
+
+    def MODE(self):
+        return
+
+    def STRU(self):
+        return
+
+    def NOOP(self):
+        message='NOOP\r\n'
+        print('C %s'%message)
+        self.conSoc.sendall(message.encode('ascii'))
+        serverResp=self.conSoc.recv(1024).decode('ascii')
+        print('S %s'%serverResp)
+        return
+
+
+    
+    
         
        
 
