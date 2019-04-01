@@ -14,6 +14,7 @@ class myThread (threading.Thread):
         self.password=''
         self.open=True
         self.authorized=False
+        self.dataSoc=None
     def run(self):
         self.runServer()
      
@@ -48,7 +49,7 @@ class myThread (threading.Thread):
         return splitStr
             
     def USER(self):
-        greeting= '220 Service ready for new user \r\n'
+        greeting= '220 Service ready for new user\r\n'
         self.conSoc.sendall(greeting.encode('ascii'))
         rec_data=self.conSoc.recv(1024)
         response=self.parseCommand(rec_data.decode('ascii'))
@@ -56,17 +57,24 @@ class myThread (threading.Thread):
         self.user=response[1]
         if(self.verifyUser()==True):
             self.authorized=True
-            response = '200 User logged in, proceed.'
+            response = '200 User logged in, proceed.\r\n'
             self.conSoc.sendall(response.encode('ascii'))
 
     def QUIT(self):
-        response='221 Service closing control connection \r\n'
+        response='221 Service closing control connection\r\n'
         self.conSoc.sendall(response.encode('ascii'))
         self.open=False
 
     def PORT(self,args):
-        print(args)
-        
+        splitArgs=args.split(',')
+        if(len(splitArgs)!=6):
+            response='501 Syntax error in parameters or arguments\r\n'
+            self.conSoc.sendall(response.encode('ascii'))
+        response = '200 Connecting to data socket\r\n'    
+        ip=splitArgs[0]+'.'+splitArgs[1]+'.'+splitArgs[2]+'.'+splitArgs[3]
+        port=int(splitArgs[4])*256+int(splitArgs[5])
+        self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.dataSoc.connect((ip.port))
 
 
                 
