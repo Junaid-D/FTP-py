@@ -10,7 +10,8 @@ class FTPClient():
         self.loggedIn=False
         self.open=True
         self.dataSoc=None
-
+        self.passiveIP=None
+        self.passivePort=None
     def run(self):
         self.conSoc.connect((ServerIP,port))
         serverResp=''
@@ -77,8 +78,7 @@ class FTPClient():
         sequence=sequence+','+str(port1)+','+str(port2)
 
         self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.dataSoc.bind((ip,(int(port))))
-        self.dataSoc.listen()
+        self.dataSoc.bind((ip,(int(portNo))))
 
         message='PORT '+sequence+'\r\n'
         print('C %s'%message)
@@ -88,6 +88,7 @@ class FTPClient():
         if(serverResp.startswith('5')):
             print('Error with parameters, retuning to menu..')
             return
+        return    
         
        
 

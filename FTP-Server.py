@@ -15,6 +15,8 @@ class myThread (threading.Thread):
         self.open=True
         self.authorized=False
         self.dataSoc=None
+        self.activeIP=None
+        self.activePort=None
     def run(self):
         self.runServer()
      
@@ -70,11 +72,14 @@ class myThread (threading.Thread):
         if(len(splitArgs)!=6):
             response='501 Syntax error in parameters or arguments\r\n'
             self.conSoc.sendall(response.encode('ascii'))
-        response = '200 Connecting to data socket\r\n'    
+        response = '200 Connecting to data socket\r\n'   
+        self.conSoc.sendall(response.encode('ascii')) 
         ip=splitArgs[0]+'.'+splitArgs[1]+'.'+splitArgs[2]+'.'+splitArgs[3]
         port=int(splitArgs[4])*256+int(splitArgs[5])
         self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.dataSoc.connect((ip.port))
+        self.activeIP=ip
+        self.activePort=port
+        #do not 
 
 
                 
