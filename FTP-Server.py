@@ -31,7 +31,11 @@ class myThread (threading.Thread):
      
 
     def verifyUser(self):
-        return True    
+        if((self.user,self.password) in self.credentials):
+            self.authorized=True
+        else:
+            self.authorized=False
+        
 
     def runServer(self):
 
@@ -76,7 +80,7 @@ class myThread (threading.Thread):
 
 
     def UNKNOWN(self):
-        message='502 Command not implemente\r\n'
+        message='502 Command not implemented\r\n'
         self.conSoc.sendall(message.encode('ascii'))               
 
     def parseCommand(self,recCommand):
@@ -102,11 +106,10 @@ class myThread (threading.Thread):
         response=self.parseCommand(rec_data.decode('ascii'))
         print('C %s'%response)
         self.user=response[1]
-        if(self.verifyUser()==True):
-            
-            response = '331 Need Password\r\n'
-            self.conSoc.sendall(response.encode('ascii'))
-        response=self.parseCommand(rec_data.decode('ascii'))
+
+        response = '331 Need Password\r\n'
+        self.conSoc.sendall(response.encode('ascii'))
+
         self.PASS()
 
     def QUIT(self):
@@ -123,7 +126,6 @@ class myThread (threading.Thread):
         self.conSoc.sendall(response.encode('ascii')) 
         ip=splitArgs[0]+'.'+splitArgs[1]+'.'+splitArgs[2]+'.'+splitArgs[3]
         port=int(splitArgs[4])*256+int(splitArgs[5])
-        self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.activeIP=ip
         self.activePort=port
         #do not use data port immediately
@@ -145,24 +147,37 @@ class myThread (threading.Thread):
 
     def STOR(self,filename):
         ###active
-        if(self.activeIP!=''):
+        if(self.activeIP is not None):
+            try:
+                newFile=open('new_onserver_'+filename,'wb')
+            except:
+                errorMsg='426 Connection closed; transfer aborted.\r\n'
+                self.conSoc.send(errorMsg.encode('ascii'))  
+                self.CloseDataSoc()
+                self.activeIP=None
+                self.activePort=None
+                return
+
             transferAccept='250 Accepted\r\n'
             self.conSoc.sendall(transferAccept.encode('ascii'))
 
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.dataSoc.connect((self.activeIP,self.activePort))
-
+            
             newFile=open('new_onserver_'+filename,'wb')
             while 1:
                 data=self.dataSoc.recv(1024)
                 if (not data): break##meaning the connection is closed in an 'orderly' way
                 newFile.write(data)
             
-            newFile.close()        
+            newFile.close()  
+
+            
+                
 
             self.CloseDataSoc()
-            self.activeIP=''
-            self.activePort=0
+            self.activeIP=None
+            self.activePort=None
             doneTransfer='226 Done upload\r\n'
             self.conSoc.sendall(doneTransfer.encode('ascii'))
 
@@ -170,12 +185,14 @@ class myThread (threading.Thread):
         if (self.dataSoc is not None):
             print('dosomething')
 
+        noDataCon='425 Create Data connection first\r\n'
+        self.conSoc.sendall(noDataCon.encode('ascii'))
         return
     
     def RETR(self,filename):
         
         ###active
-        if(self.activeIP!=''):
+        if(self.activeIP is not None):
             transferAccept='250 Accepted\r\n'
             self.conSoc.sendall(transferAccept.encode('ascii'))
 
@@ -187,14 +204,18 @@ class myThread (threading.Thread):
                     self.dataSoc.send(toSend)
                     toSend=f.read(1024)
             self.CloseDataSoc()
-            self.activeIP=''
-            self.activePort=0
+            self.activeIP=None
+            self.activePort=None
             doneTransfer='226 Done download\r\n'
             self.conSoc.sendall(doneTransfer.encode('ascii'))
 
        ###passive
         if (self.dataSoc is not None):
             print('dosomething')
+
+        ##nothing
+        noDataCon='425 Create Data connection first\r\n'
+        self.conSoc.sendall(noDataCon.encode('ascii'))
         
 
     def CloseDataSoc(self):
@@ -219,11 +240,9 @@ class myThread (threading.Thread):
             response='530 Not logged in\r\n'
             self.conSoc.sendall(response.encode('ascii'))
             return
-        
-
         self.password=response[1]
-        if((self.user,self.password) in self.credentials):
-            self.authorized=True
+        self.verifyUser()
+        if(self.authorized):
             response='200 Success\r\n'
             self.conSoc.sendall(response.encode('ascii'))
         else:
@@ -249,13 +268,13 @@ class myThread (threading.Thread):
                 #bin/ls format
                 prefix=''
                 if(os.path.isdir(file)):
-                    prefix='rwxr-xr-x 1'
+                    prefix='drwxr-xr-x 1'
                 else:
-                   prefix= 'rw-r--r-- 1'
+                   prefix= '-rw-r--r-- 1'
                 line = [
                 prefix,
-                str(fileInfo.st_uid),
-                str(fileInfo.st_gid),
+                'def',
+                'def',
                 str(fileInfo.st_size),
                 datetime.utcfromtimestamp(fileInfo.st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
                 str(file),
@@ -266,8 +285,9 @@ class myThread (threading.Thread):
                 print(lineStr)
                 toSend+=lineStr
 
-
-            if(self.activeIP!=''):
+            ##active
+            if(self.activeIP is not None):
+                print('List sent')
                 transferAccept='226 Accepted\r\n'
                 self.conSoc.sendall(transferAccept.encode('ascii'))
 
@@ -277,13 +297,24 @@ class myThread (threading.Thread):
                 self.dataSoc.sendall(toSend.encode('ascii'))
                   
                 self.CloseDataSoc()
-                self.activeIP=''
-                self.activePort=0
+                self.activeIP=None
+                self.activePort=None
                 doneTransfer='226 Done upload\r\n'
                 self.conSoc.sendall(doneTransfer.encode('ascii'))
+                return
+            ##passive
+            if (self.dataSoc is not None):
+                return 
+            
+            ##nothing
+            noDataCon='425 Create Data connection first\r\n'
+            self.conSoc.sendall(noDataCon.encode('ascii'))
 
 
         
+        return
+
+    def CWD(self):
         return
 
 with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as soc:
