@@ -3,6 +3,8 @@ import threading
 import time
 import os
 import csv
+from datetime import datetime
+
 
 host = '127.0.0.1'
 port = 4500
@@ -239,6 +241,48 @@ class myThread (threading.Thread):
         if(args==''):
             files=os.listdir(self.currentPath)
             print(files)
+            
+            toSend=''
+            for file in files:
+
+                fileInfo=os.stat(file)
+                #bin/ls format
+                prefix=''
+                if(os.path.isdir(file)):
+                    prefix='rwxr-xr-x 1'
+                else:
+                   prefix= 'rw-r--r-- 1'
+                line = [
+                prefix,
+                str(fileInfo.st_uid),
+                str(fileInfo.st_gid),
+                str(fileInfo.st_size),
+                datetime.utcfromtimestamp(fileInfo.st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
+                str(file),
+                '\r\n'
+                ]
+                
+                lineStr=' '.join(line)
+                print(lineStr)
+                toSend+=lineStr
+
+
+            if(self.activeIP!=''):
+                transferAccept='226 Accepted\r\n'
+                self.conSoc.sendall(transferAccept.encode('ascii'))
+
+                self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                self.dataSoc.connect((self.activeIP,self.activePort))
+
+                self.dataSoc.sendall(toSend.encode('ascii'))
+                  
+                self.CloseDataSoc()
+                self.activeIP=''
+                self.activePort=0
+                doneTransfer='226 Done upload\r\n'
+                self.conSoc.sendall(doneTransfer.encode('ascii'))
+
+
         
         return
 
