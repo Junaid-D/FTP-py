@@ -2,6 +2,7 @@ import socket
 import threading
 import time
 import os
+import csv
 
 host = '127.0.0.1'
 port = 4500
@@ -21,6 +22,8 @@ class myThread (threading.Thread):
         self.activePort=None
         self.structure='File'
         self.type='A'
+        self.credentials=None
+        self.currentPath=os.getcwd()
     def run(self):
         self.runServer()
      
@@ -29,6 +32,8 @@ class myThread (threading.Thread):
         return True    
 
     def runServer(self):
+
+        self.ReadCredentials()
 
         if(self.authorized==False):#greeting
             self.USER()
@@ -43,24 +48,34 @@ class myThread (threading.Thread):
                 print("Received",receivedData)
                 if receivedData[0]=='QUIT':
                     self.QUIT()
-                if receivedData[0]=='PORT':
+                elif receivedData[0]=='PORT':
                     self.PORT(receivedData[1])
-                if receivedData[0]=='NOOP':
+                elif receivedData[0]=='NOOP':
                     self.NOOP()
-                if receivedData[0]=='RETR':
+                elif receivedData[0]=='RETR':
                     self.RETR(receivedData[1])
-                if receivedData[0]=='TYPE':
+                elif receivedData[0]=='TYPE':
                     self.TYPE(receivedData[1])
-                if receivedData[0]=='STOR':
+                elif receivedData[0]=='STOR':
                     self.STOR(receivedData[1])
-                if receivedData[0]=='SYST':
+                elif receivedData[0]=='SYST':
                     self.SYST()
-                if receivedData[0]=='FEAT':
+                elif receivedData[0]=='FEAT':
                     self.FEAT()
-                if receivedData[0]=='PWD':
-                    self.PWD(receivedData[1])
+                elif receivedData[0]=='PWD':
+                    self.PWD()
+                elif receivedData[0]=='LIST':
+                    self.LIST(receivedData[1])
+                else:
+                
+                    self.UNKNOWN()
 
-    print('Server is shutting down.')                
+        print('Server is shutting down.')    
+
+
+    def UNKNOWN(self):
+        message='502 Command not implemente\r\n'
+        self.conSoc.sendall(message.encode('ascii'))               
 
     def parseCommand(self,recCommand):
         splitStr=recCommand[:-2]
@@ -68,7 +83,16 @@ class myThread (threading.Thread):
         if len(splitStr) == 1:
             return [splitStr[0],'']
         return splitStr
-            
+
+    def ReadCredentials(self):
+        with open('logins.txt') as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            self.credentials=[('ADMIN','ADMIN')]
+            for row in csv_reader:
+                self.credentials.append((row[0],row[1]))
+        print(self.credentials)
+
+
     def USER(self):
         greeting= '220 Service ready for new user\r\n'
         self.conSoc.sendall(greeting.encode('ascii'))
@@ -77,9 +101,11 @@ class myThread (threading.Thread):
         print('C %s'%response)
         self.user=response[1]
         if(self.verifyUser()==True):
-            self.authorized=True
-            response = '200 User logged in, proceed.\r\n'
+            
+            response = '331 Need Password\r\n'
             self.conSoc.sendall(response.encode('ascii'))
+        response=self.parseCommand(rec_data.decode('ascii'))
+        self.PASS()
 
     def QUIT(self):
         response='221 Service closing control connection\r\n'
@@ -183,9 +209,38 @@ class myThread (threading.Thread):
         response='211 RETR PORT\r\n'
         self.conSoc.sendall(response.encode('ascii'))     
     
-    def PWD(self,password):
-        response='200 Success\r\n'
-        self.conSoc.sendall(response.encode('ascii'))  
+    def PASS(self):
+        rec_data=self.conSoc.recv(1024)
+        response=self.parseCommand(rec_data.decode('ascii'))
+        print('C ',response)
+        if(response[0]!='PASS'):
+            response='530 Not logged in\r\n'
+            self.conSoc.sendall(response.encode('ascii'))
+            return
+        
+
+        self.password=response[1]
+        if((self.user,self.password) in self.credentials):
+            self.authorized=True
+            response='200 Success\r\n'
+            self.conSoc.sendall(response.encode('ascii'))
+        else:
+            response='430 Invalid login\r\n'
+            self.conSoc.sendall(response.encode('ascii'))
+         
+    def PWD(self):
+        path = os.getcwd()
+        response='257 "'+path+'" returned path.\r\n'
+        self.conSoc.sendall(response.encode('ascii'))
+        return
+
+    def LIST(self,args):
+        
+        if(args==''):
+            files=os.listdir(self.currentPath)
+            print(files)
+        
+        return
 
 with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as soc:
     #welcoming socket

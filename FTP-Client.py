@@ -35,15 +35,29 @@ class FTPClient():
     def login(self):
         #serverResp=self.conSoc.recv(1024).decode('ascii')
        # print('S %s' % serverResp)
-        userName=input("type username..")
-        loginMessage='USER '+userName+'\r\n'
-        print('C %s' % loginMessage)
-        self.conSoc.sendall(loginMessage.encode('ascii'))
-        serverResp=self.conSoc.recv(1024).decode('ascii')
-        print('S %s' % serverResp)
-        if(serverResp.startswith('200')):
-            self.loggedIn=True
-            print("Login success!")
+       while 1:
+            userName=input("type username..")
+            loginMessage='USER '+userName+'\r\n'
+            print('C %s' % loginMessage)
+            self.conSoc.sendall(loginMessage.encode('ascii'))
+            serverResp=self.conSoc.recv(1024).decode('ascii')
+            print('S %s' % serverResp)
+
+            if(serverResp.startswith('331')):
+                password=input("type password..")
+                loginMessage='PASS '+password+'\r\n'
+                print('C %s' % loginMessage)
+                self.conSoc.sendall(loginMessage.encode('ascii'))
+            else:
+                continue
+                
+            serverResp=self.conSoc.recv(1024).decode('ascii')
+            print('S %s' % serverResp)
+
+            if(serverResp.startswith('200')):
+                self.loggedIn=True
+                print("Login success!")
+                break
 
     def parseCommand(self,command):
         if (command=='QUIT'):
