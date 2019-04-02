@@ -64,6 +64,8 @@ class FTPClient():
             self.QUIT() 
         elif (command=='PORT'):
             self.PORT()
+        elif (command=="PASV"):
+            self.PASV()
         elif (command=='TYPE'):
             self.TYPE()
         elif (command=='MODE'):
@@ -116,7 +118,23 @@ class FTPClient():
         if(serverResp.startswith('5')):
             print('Error with parameters, retuning to menu..')
         return    
-
+    def PASV(self):
+        message='PASV\r\n'
+        print('C %s'%message)
+        self.conSoc.sendall(message.encode('ascii'))
+        serverResp=self.conSoc.recv(1024).decode('ascii')
+        print('S %s'%serverResp)
+        if(serverResp.startswith('2')):
+            splitResp=serverResp[:-2]
+            print(splitResp)
+            splitResp=splitResp.split()
+            splitIP=splitResp[4]
+            splitIP=splitIP.split(",")
+            self.passiveIP=splitIP[0]+splitIP[1]+splitIP[2]+splitIP[3]
+            self.passivePort=int(splitIP[4])*256+int(splitIP[5])
+        elif(serverResp.startswith('5')):
+            print('Error with parameters, retuning to menu..')
+        return  
     def RETR(self):#stream--server will close connection, block-- eof block will be sent
         if(self.passiveIP==None and self.dataSoc==None):
             print('No data connection was set up')
@@ -148,7 +166,20 @@ class FTPClient():
             return
 
         if(self.passiveIP!=None):##Assume Passive
+            self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            self.dataSoc.connect(self.passiveIP,self.passivePort)
+            newFile=open('new_'+filename,'wb')
 
+            while 1:
+                data=self.dataSoc.recv(1024)
+                if (not data): break##meaning the connection is closed in an 'orderly' way
+                newFile.write(data)
+            
+            newFile.close()        
+            print('Transfer complete')
+            
+            serverResp=self.conSoc.recv(1024).decode('ascii')
+            print('S %s'%serverResp)
             self.dataSoc.close()
             self.dataSoc=None
             return
@@ -189,6 +220,15 @@ class FTPClient():
             return
 
         if(self.passiveIP!=None):##Assume Passive
+            self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            self.dataSoc.connect(self.passiveIP,self.passivePort)
+            with open(filename,'rb') as f:##read as binary
+                toSend=f.read(1024)#using send for now instead of sendall
+                while (toSend):
+                    self.dataSoc.send(toSend)
+                    toSend=f.read(1024)
+            serverResp=self.conSoc.recv(1024).decode('ascii')
+            print('S %s'%serverResp)
             self.dataSoc.close()
             self.dataSoc=None
             return

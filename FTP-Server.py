@@ -135,10 +135,10 @@ class myThread (threading.Thread):
     def PASV(self):
         print('Initiating passive data port')
         self.passiveIP=host
-        self.activePort=random.randint(1024,self.portRange)
+        self.passivePort=random.randint(1024,self.portRange)
         splitIP=host.split('.')
-        port1=int(self.activePort)//256
-        port2=int(self.activePort)%256
+        port1=int(self.passivePort)//256
+        port2=int(self.passivePort)%256
         #ip
         sequence=splitIP[0]+','+splitIP[1]+','+splitIP[2]+','+splitIP[3]    
         #port
@@ -146,7 +146,7 @@ class myThread (threading.Thread):
         
         self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.dataSoc.bind((self.passiveIP,self.passivePort))
-        message='227  Entering Passive Mode ('+sequence+')\r\n'
+        message='227  Entering Passive Mode '+sequence+'\r\n'
 
         self.conSoc.sendall(message.encode('ascii'))
 
@@ -217,10 +217,10 @@ class myThread (threading.Thread):
 
             #self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             #self.dataSoc.bind((self.passiveIP,self.passivePort))
-            
+            s1,addr=self.dataSoc.listen()
             newFile=open('new_onserver_'+filename,'wb')
             while 1:
-                data=self.dataSoc.recv(1024)
+                data=s1.recv(1024)
                 if (not data): break##meaning the connection is closed in an 'orderly' way
                 newFile.write(data)
             
@@ -265,10 +265,11 @@ class myThread (threading.Thread):
 
             #self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             #self.dataSoc.connect((self.activeIP,self.activePort))
+            s1,addr=self.dataSoc.listen();
             with open(filename,'rb') as f:##read as binary
                 toSend=f.read(1024)#using send for now instead of sendall
                 while (toSend):
-                    self.dataSoc.send(toSend)
+                    s1.send(toSend)
                     toSend=f.read(1024)
             self.CloseDataSoc()
             self.passiveIP=None
