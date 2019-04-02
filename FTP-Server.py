@@ -4,7 +4,7 @@ import time
 import os
 import csv
 from datetime import datetime
-
+import random
 
 host = '127.0.0.1'
 port = 4500
@@ -16,12 +16,15 @@ class myThread (threading.Thread):
         self.conSoc=conSoc
         self.dest=dest
         self.user=''
+        self.portRange=2048;
         self.password=''
         self.open=True
         self.authorized=False
         self.dataSoc=None
         self.activeIP=None
         self.activePort=None
+        self.passiveIP=None
+        self.passivePort=None
         self.structure='File'
         self.type='A'
         self.credentials=None
@@ -129,7 +132,24 @@ class myThread (threading.Thread):
         self.activeIP=ip
         self.activePort=port
         #do not use data port immediately
-    
+    def PASV(self):
+        print('Initiating passive data port')
+        self.passiveIP=host
+        self.activePort=random.randint(1024,self.portRange)
+        splitIP=host.split('.')
+        port1=int(self.activePort)//256
+        port2=int(self.activePort)%256
+        #ip
+        sequence=splitIP[0]+','+splitIP[1]+','+splitIP[2]+','+splitIP[3]    
+        #port
+        sequence=sequence+','+str(port1)+','+str(port2)
+        
+        self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.dataSoc.bind((self.passiveIP,self.passivePort))
+        message='227  Entering Passive Mode ('+sequence+')\r\n'
+
+        self.conSoc.sendall(message.encode('ascii'))
+
     def NOOP(self):
         response = '200 NOOP Done\r\n'
         self.conSoc.sendall(response.encode('ascii'))
@@ -183,8 +203,37 @@ class myThread (threading.Thread):
 
         ###PASSIVE
         if (self.dataSoc is not None):
-            print('dosomething')
+            try:
+                newFile=open('new_onserver_'+filename,'wb')
+            except:
+                errorMsg='426 Connection closed; transfer aborted.\r\n'
+                self.conSoc.send(errorMsg.encode('ascii'))  
+                self.CloseDataSoc()
+                self.activeIP=None
+                self.activePort=None
+                return           
+            transferAccept='250 Accepted\r\n'
+            self.conSoc.sendall(transferAccept.encode('ascii'))
 
+            #self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            #self.dataSoc.bind((self.passiveIP,self.passivePort))
+            
+            newFile=open('new_onserver_'+filename,'wb')
+            while 1:
+                data=self.dataSoc.recv(1024)
+                if (not data): break##meaning the connection is closed in an 'orderly' way
+                newFile.write(data)
+            
+            newFile.close()  
+
+            
+                
+
+            self.CloseDataSoc()
+            self.passiveIP=None
+            self.passivePort=None
+            doneTransfer='226 Done upload\r\n'
+            self.conSoc.sendall(doneTransfer.encode('ascii'))
         noDataCon='425 Create Data connection first\r\n'
         self.conSoc.sendall(noDataCon.encode('ascii'))
         return
@@ -211,7 +260,21 @@ class myThread (threading.Thread):
 
        ###passive
         if (self.dataSoc is not None):
-            print('dosomething')
+            transferAccept='250 Accepted\r\n'
+            self.conSoc.sendall(transferAccept.encode('ascii'))
+
+            #self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            #self.dataSoc.connect((self.activeIP,self.activePort))
+            with open(filename,'rb') as f:##read as binary
+                toSend=f.read(1024)#using send for now instead of sendall
+                while (toSend):
+                    self.dataSoc.send(toSend)
+                    toSend=f.read(1024)
+            self.CloseDataSoc()
+            self.passiveIP=None
+            self.passivePort=None
+            doneTransfer='226 Done download\r\n'
+            self.conSoc.sendall(doneTransfer.encode('ascii'))
 
         ##nothing
         noDataCon='425 Create Data connection first\r\n'
