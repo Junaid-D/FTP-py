@@ -159,9 +159,7 @@ class FTPClient():
             
             newFile.close()        
             print('Transfer complete')
-            
-            serverResp=self.conSoc.recv(1024).decode('ascii')
-            print('S %s'%serverResp)
+ 
             self.CloseDataSocket()
             return
 
@@ -178,8 +176,7 @@ class FTPClient():
             newFile.close()        
             print('Transfer complete')
             
-            serverResp=self.conSoc.recv(1024).decode('ascii')
-            print('S %s'%serverResp)
+
             self.dataSoc.close()
             self.dataSoc=None
             return
@@ -211,10 +208,7 @@ class FTPClient():
             
             s1.shutdown(socket.SHUT_RDWR)
             s1.close()
-  
-            serverResp=self.conSoc.recv(1024).decode('ascii')
-            print('S %s'%serverResp)
-  
+
 
             self.CloseDataSocket()
             return
@@ -227,8 +221,6 @@ class FTPClient():
                 while (toSend):
                     self.dataSoc.send(toSend)
                     toSend=f.read(1024)
-            serverResp=self.conSoc.recv(1024).decode('ascii')
-            print('S %s'%serverResp)
             self.dataSoc.close()
             self.dataSoc=None
             return
