@@ -157,12 +157,12 @@ class myThread (threading.Thread):
         self.conSoc.sendall(response.encode('ascii'))
 
     def TYPE(self,newType):
-        types=['ascii','binary',"a","b"]
+        types=['ascii','binary',"a","b","A","B"]
         if(newType not in types):
             response='501 Invalid Type\r\n'
             self.conSoc.sendall(response.encode('ascii'))
             return
-        if(newType=="ascii"||newType=="a")
+        if(newType=="ascii" or newType=="a" or newType=="A")
             self.type=""
         else:
             self.type="b"
