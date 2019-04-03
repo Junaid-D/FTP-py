@@ -13,6 +13,7 @@ class FTPClient():
         self.dataSoc=None
         self.passiveIP=None
         self.passivePort=None
+        self.type='b'
     def run(self):
         self.conSoc.connect((ServerIP,port))
         serverResp=''
@@ -150,7 +151,7 @@ class FTPClient():
         if(self.dataSoc!=None):##Assume active
             self.dataSoc.listen()
             s1,addr=self.dataSoc.accept()
-            newFile=open('new_'+filename,'wb')
+            newFile=open('new_'+filename,'w'+self.type)
 
             while 1:
                 data=s1.recv(1024)
@@ -166,7 +167,7 @@ class FTPClient():
         if(self.passiveIP!=None):##Assume Passive
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.dataSoc.connect(self.passiveIP,self.passivePort)
-            newFile=open('new_'+filename,'wb')
+            newFile=open('new_'+filename,'w'+self.type)
 
             while 1:
                 data=self.dataSoc.recv(1024)
@@ -200,7 +201,7 @@ class FTPClient():
             self.dataSoc.listen()
             s1,addr=self.dataSoc.accept()
 
-            with open(filename,'rb') as f:##read as binary
+            with open(filename,'r'+self.type) as f:##read as binary
                 toSend=f.read(1024)#using send for now instead of sendall
                 while (toSend):
                     s1.send(toSend)
@@ -216,7 +217,7 @@ class FTPClient():
         if(self.passiveIP!=None):##Assume Passive
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.dataSoc.connect(self.passiveIP,self.passivePort)
-            with open(filename,'rb') as f:##read as binary
+            with open(filename,'r'+self.type) as f:##read as binary
                 toSend=f.read(1024)#using send for now instead of sendall
                 while (toSend):
                     self.dataSoc.send(toSend)

@@ -26,7 +26,7 @@ class myThread (threading.Thread):
         self.passiveIP=None
         self.passivePort=None
         self.structure='File'
-        self.type='A'
+        self.type='b'
         self.credentials=None
         self.currentPath=os.getcwd()
     def run(self):
@@ -157,13 +157,15 @@ class myThread (threading.Thread):
         self.conSoc.sendall(response.encode('ascii'))
 
     def TYPE(self,newType):
-        types=['A','E','I','L']
+        types=['ascii','binary',"a","b"]
         if(newType not in types):
             response='501 Invalid Type\r\n'
             self.conSoc.sendall(response.encode('ascii'))
             return
-
-        self.type=newType
+        if(newType=="ascii"||newType=="a")
+            self.type=""
+        else:
+            self.type="b"
         response = '200 Type Altered\r\n'
         self.conSoc.sendall(response.encode('ascii'))
 
@@ -171,7 +173,7 @@ class myThread (threading.Thread):
         ###active
         if(self.activeIP is not None):
             try:
-                newFile=open('new_onserver_'+filename,'wb')
+                newFile=open('new_onserver_'+filename,"w"+self.type)
             except:
                 errorMsg='426 Connection closed; transfer aborted.\r\n'
                 self.conSoc.send(errorMsg.encode('ascii'))  
@@ -186,7 +188,7 @@ class myThread (threading.Thread):
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.dataSoc.connect((self.activeIP,self.activePort))
             
-            newFile=open('new_onserver_'+filename,'wb')
+            newFile=open('new_onserver_'+filename,"w"+self.type)
             while 1:
                 data=self.dataSoc.recv(1024)
                 if (not data): break##meaning the connection is closed in an 'orderly' way
@@ -201,7 +203,7 @@ class myThread (threading.Thread):
         ###PASSIVE
         if (self.dataSoc is not None):
             try:
-                newFile=open('new_onserver_'+filename,'wb')
+                newFile=open('new_onserver_'+filename,"w"+self.type)
             except:
                 errorMsg='426 Connection closed; transfer aborted.\r\n'
                 self.conSoc.send(errorMsg.encode('ascii'))  
@@ -217,7 +219,7 @@ class myThread (threading.Thread):
             self.dataSoc.listen()
             s1,addr=self.dataSoc.accept()
 
-            newFile=open('new_onserver_'+filename,'wb')
+            newFile=open('new_onserver_'+filename,"w"+self.type)
             while 1:
                 data=s1.recv(1024)
                 if (not data): break##meaning the connection is closed in an 'orderly' way
@@ -244,7 +246,7 @@ class myThread (threading.Thread):
 
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.dataSoc.connect((self.activeIP,self.activePort))
-            with open(filename,'rb') as f:##read as binary
+            with open(filename,'r'+self.type) as f:##read as binary
                 toSend=f.read(1024)#using send for now instead of sendall
                 while (toSend):
                     self.dataSoc.send(toSend)
@@ -262,7 +264,7 @@ class myThread (threading.Thread):
             self.dataSoc.listen()
             s1,addr=self.dataSoc.accept()
            
-            with open(filename,'rb') as f:##read as binary
+            with open(filename,'r'+self.type) as f:##read as binary
                 toSend=f.read(1024)#using send for now instead of sendall
                 while (toSend):
                     s1.send(toSend)
