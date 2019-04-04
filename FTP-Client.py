@@ -220,6 +220,7 @@ class FTPClient():
             with open(filename,'r'+self.type) as f:##read as binary
                 toSend=f.read(1024)#using send for now instead of sendall
                 while (toSend):
+                    if (self.type==''): toSend=toSend.encode('ascii')
                     self.dataSoc.send(toSend)
                     toSend=f.read(1024)
             self.dataSoc.close()

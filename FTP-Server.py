@@ -157,15 +157,16 @@ class myThread (threading.Thread):
         self.conSoc.sendall(response.encode('ascii'))
 
     def TYPE(self,newType):
-        types=['ascii','binary',"a","b","A","B"]
+        types=['A','I']
         if(newType not in types):
             response='501 Invalid Type\r\n'
             self.conSoc.sendall(response.encode('ascii'))
             return
-        if(newType=="ascii" or newType=="a" or newType=="A")
+        if(newType=="A"):
             self.type=""
         else:
             self.type="b"
+
         response = '200 Type Altered\r\n'
         self.conSoc.sendall(response.encode('ascii'))
 
@@ -267,6 +268,7 @@ class myThread (threading.Thread):
             with open(filename,'r'+self.type) as f:##read as binary
                 toSend=f.read(1024)#using send for now instead of sendall
                 while (toSend):
+                    if (self.type==''): toSend=toSend.encode('ascii')
                     s1.send(toSend)
                     toSend=f.read(1024)
             
