@@ -43,7 +43,7 @@ class FTPClient():
         if (command=='QUIT'):
             self.QUIT() 
         elif (command=='PORT'):
-            self.PORT()
+            self.PORT('','')
         elif (command=="PASV"):
             self.PASV()
         elif (command=='TYPE'):
@@ -73,13 +73,10 @@ class FTPClient():
             self.conSoc.close()
             return
 
-    def PORT(self):
+    def PORT(self,ip,portNo):
         print('Requesting data port')
-        ip=''
-        while ip.count('.')!=3:
-            ip=input('IP use . as separator?\n')
+
         splitIP=ip.split('.')
-        portNo=input('Port no: ?\n')
         port1=int(portNo)//256
         port2=int(portNo)%256
         #ip
@@ -97,7 +94,8 @@ class FTPClient():
         print('S %s'%serverResp)
         if(serverResp.startswith('5')):
             print('Error with parameters, retuning to menu..')
-        return    
+            return 1
+        return 0
     def PASV(self):
         message='PASV\r\n'
         print('C %s'%message)
@@ -313,14 +311,14 @@ class GUIClient():
         self.window.title("FTP Client") 
         self.window.geometry('1280x1024')
 
-        self.loginBtn = Button(self.window, text="Login",command=self.doLogin)
-        self.pasvbBtn = Button(self.window, text="PASV",command=self.doPASV)
+        self.loginBtn = Button(self.window, text="Login",state=DISABLED,command=self.doLogin)
+        self.pasvbBtn = Button(self.window, text="PASV",state=DISABLED,command=self.doPASV)
 
-        self.portBtn = Button(self.window, text="PORT",command=self.doPORT)
-        self.typeBtn = Button(self.window, text="TYPE",command=self.doTYPE)
+        self.portBtn = Button(self.window, text="PORT",state=DISABLED,command=self.doPORT)
+        self.typeBtn = Button(self.window, text="TYPE",state=DISABLED,command=self.doTYPE)
 
         self.connectBtn=Button(self.window, text="Connect",command=self.doConnect)
-        self.listBtn=Button(self.window, text = 'LIST', command=self.doList)
+        self.listBtn=Button(self.window, text = 'LIST',state=DISABLED, command=self.doList)
 
         self.FileList=Text(self.window,height=20,width=50)
         self.Log=Text(self.window,height=20,width=50)
@@ -351,6 +349,8 @@ class GUIClient():
             self.FTPClient.Connect(serverIP,int(port))
             self.Log.insert(END,'Connected to Server. Login..\n')
             self.connected=True
+            self.connectBtn['state']='disabled'
+            self.loginBtn['state']='normal'
         except:
             self.Log.insert(END,'Could not Connect\n')
         
@@ -367,9 +367,13 @@ class GUIClient():
             if(self.FTPClient.loggedIn):
                 self.Log.insert(END,'Logged in !\n')
                 self.loggedIn=True
+                self.loginBtn['state']='disabled'
+                self.enableNonDataButtons()
             else:
+                self.disableNonDataButtons()
                 return
         except:
+            self.disableNonDataButtons()
             self.Log.insert(END,'Could not log in...\n')
         
 
@@ -381,10 +385,25 @@ class GUIClient():
     
 
     def doPORT(self):
+        ip=self.doPopUp('Enter IP')
+        port=self.doPopUp('Enter Port')
+        try:
+            if(self.FTPClient.PORT(ip,int(port)) ==0):
+                self.Log.insert(END,'Listen socket created at'+ip+':'+port)
+                self.enableDataButtons()
+            else:
+                self.Log.insert(END,'Failed, invalid input...')
+                self.disableDataButtons()
+        except:
+            self.Log.insert(END,'Failed, invalid input...')
+            self.disableDataButtons()
+
+
         return
     
     def doPASV(self):
         self.FTPClient.PASV()
+        self.enableDataButtons()
         self.Log.insert(END,'Created Passive Data soc\n')
         self.Log.insert(END,'Passive at: '+self.FTPClient.passiveIP +':'+str(self.FTPClient.passivePort))
         return
@@ -392,11 +411,23 @@ class GUIClient():
     def doList(self):
         self.FTPClient.LIST()
         self.FileList.insert(END,self.FTPClient.list)
+        self.disableDataButtons()
         return
 
-    
+    def enableDataButtons(self):
+        self.listBtn['state']='normal'
 
-        
+    def disableDataButtons(self):
+        self.listBtn['state']='disabled'
+    
+    def enableNonDataButtons(self):
+        self.portBtn['state']='normal'
+        self.pasvbBtn['state']='normal'
+    
+    def disableNonDataButtons(self):
+        self.portBtn['state']='disabled'
+        self.pasvbBtn['state']='disabled'
+
 
 class popupWindow(object):
     def __init__(self,master,title):
