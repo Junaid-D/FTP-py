@@ -240,12 +240,70 @@ class FTPClient():
         print('S %s'%serverResp)
         return
 
+    def Connect(self):
+        self.conSoc.connect((ServerIP,port))
+        serverResp=''
+        while(serverResp==''):
+            serverResp=self.conSoc.recv(1024).decode('ascii')
+
+        print('S %s' % serverResp)
+
+        return
 
     def MODE(self):
         return
 
     def STRU(self):
         return
+
+    def LIST(self):
+        message = 'LIST \r\n'
+        print('C %s'%message)
+        self.conSoc.sendall(message.encode('ascii'))
+
+        serverResp=self.conSoc.recv(1024).decode('ascii')
+        print('S %s'%serverResp)
+        if(serverResp.startswith('2')):
+            list=''
+
+            if(self.dataSoc!=None):##Assume active
+
+                self.dataSoc.listen()
+                s1,addr=self.dataSoc.accept()
+
+                while 1:
+                    data=s1.recv(1024)
+                    if not data:
+                        break
+                    list+=data
+
+                s1.shutdown(socket.SHUT_RDWR)
+                s1.close()
+
+                print (list)
+                self.CloseDataSocket()
+                return list
+
+            if(self.passiveIP!=None):##Assume Passive
+                self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                self.dataSoc.connect(self.passiveIP,self.passivePort)
+                
+                while 1:
+                    data=self.dataSoc.recv(1024)
+                    if not data:
+                        break
+                    list+=data
+
+                self.dataSoc.close()
+                self.dataSoc=None
+                print (list)
+                return list
+        else:
+
+            print("No data soc")
+            return
+
+
 
     def NOOP(self):
         message='NOOP\r\n'
@@ -263,4 +321,29 @@ class FTPClient():
 
 thisClient=FTPClient()
 
-thisClient.run()
+       
+window = Tk()
+window.title("FTP Client") 
+window.geometry('640x480')
+
+loginBtn = Button(window, text="Login",command=thisClient.login)
+pasvbBtn = Button(window, text="PASV",command=thisClient.PASV)
+
+portBtn = Button(window, text="PORT",command=thisClient.PORT)
+typeBtn = Button(window, text="TYPE",command=thisClient.TYPE)
+
+connectBtn=Button(window, text="Connect",command=thisClient.Connect)
+listBtn=Button(window, text = 'LIST', command=thisClient.LIST)
+
+
+
+loginBtn.grid(column=1, row=0)
+pasvbBtn.grid(column=1, row=2)
+portBtn.grid(column=1, row=4)
+typeBtn.grid(column=1, row=6)
+connectBtn.grid(column=1, row=8)
+window.mainloop()
+    
+
+
+#thisClient.run()
