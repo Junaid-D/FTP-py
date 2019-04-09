@@ -47,7 +47,7 @@ class FTPClient():
         elif (command=="PASV"):
             self.PASV()
         elif (command=='TYPE'):
-            self.TYPE()
+            self.TYPE('')
         elif (command=='MODE'):
             self.MODE()
         elif (command=='STRU'):
@@ -113,12 +113,11 @@ class FTPClient():
         elif(serverResp.startswith('5')):
             print('Error with parameters, retuning to menu..')
         return  
-    def RETR(self):#stream--server will close connection, block-- eof block will be sent
+    def RETR(self,filename):#stream--server will close connection, block-- eof block will be sent
         if(self.passiveIP==None and self.dataSoc==None):
             print('No data connection was set up')
             return
         
-        filename=input('Input filename\n')
         message='RETR '+filename+'\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
@@ -206,16 +205,17 @@ class FTPClient():
             self.dataSoc=None
             return
  
-    def TYPE(self):
-        type=''
-        while(len(type)!=1):
-            type=input('Type?\n')
+    def TYPE(self,type):
+
         message='TYPE '+type+'\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
-        return
+        if(serverResp.startswith('2')):
+            return 0 
+        else:
+            return 1
 
     def Connect(self,serverip,port):
         self.conSoc.connect((serverip,port))
@@ -318,7 +318,9 @@ class GUIClient():
         self.typeBtn = Button(self.window, text="TYPE",state=DISABLED,command=self.doTYPE)
 
         self.connectBtn=Button(self.window, text="Connect",command=self.doConnect)
-        self.listBtn=Button(self.window, text = 'LIST',state=DISABLED, command=self.doList)
+        self.listBtn=Button(self.window, text = 'LIST',state=DISABLED, command=self.doLIST)
+        self.retrBtn=Button(self.window, text = 'RETR',state=DISABLED, command=self.doRETR)
+
 
         self.FileList=Text(self.window,height=20,width=50)
         self.Log=Text(self.window,height=20,width=50)
@@ -330,6 +332,7 @@ class GUIClient():
         self.typeBtn.grid(column=1, row=6)
         self.listBtn.grid(column=1, row =10)
         self.connectBtn.grid(column=1, row=8)
+        self.retrBtn.grid(column=2,row=2)
         self.Log.grid(column=5,row=3)
         self.FileList.grid(column=7,row=3)
 
@@ -381,7 +384,11 @@ class GUIClient():
 
 
     def doTYPE(self):
-        return
+        type=self.doPopUp('Type? (I or A)')
+        if( self.FTPClient.TYPE(type)==0):
+            self.Log.insert(END,'Type set to '+type+'\n')
+        else:
+            self.Log.insert(END,'Could not complete\n')
     
 
     def doPORT(self):
@@ -389,13 +396,13 @@ class GUIClient():
         port=self.doPopUp('Enter Port')
         try:
             if(self.FTPClient.PORT(ip,int(port)) ==0):
-                self.Log.insert(END,'Listen socket created at'+ip+':'+port)
+                self.Log.insert(END,'Listen socket created at'+ip+':'+port+'\n')
                 self.enableDataButtons()
             else:
-                self.Log.insert(END,'Failed, invalid input...')
+                self.Log.insert(END,'Failed, invalid input...\n')
                 self.disableDataButtons()
         except:
-            self.Log.insert(END,'Failed, invalid input...')
+            self.Log.insert(END,'Failed, invalid input...\n')
             self.disableDataButtons()
 
 
@@ -404,29 +411,48 @@ class GUIClient():
     def doPASV(self):
         self.FTPClient.PASV()
         self.enableDataButtons()
-        self.Log.insert(END,'Created Passive Data soc\n')
-        self.Log.insert(END,'Passive at: '+self.FTPClient.passiveIP +':'+str(self.FTPClient.passivePort))
+        self.Log.insert(END,'Created Passive Data soc \n')
+        self.Log.insert(END,'Passive at: '+self.FTPClient.passiveIP +':'+str(self.FTPClient.passivePort) +'\n')
         return
 
-    def doList(self):
+    def doLIST(self):
         self.FTPClient.LIST()
         self.FileList.insert(END,self.FTPClient.list)
         self.disableDataButtons()
         return
 
+    def doRETR(self):
+        filename=self.doPopUp('Filename?')
+        try:
+            self.FTPClient.RETR(filename)
+            self.Log.insert(END,filename+'downloaded\n')
+            self.disableDataButtons()
+        except:
+            self.Log.insert(END,'Could not download...\n')
+            self.disableDataButtons()
+
+        return
+
     def enableDataButtons(self):
         self.listBtn['state']='normal'
+        self.retrBtn['state']='normal'
+
 
     def disableDataButtons(self):
         self.listBtn['state']='disabled'
+        self.retrBtn['state']='disabled'
+
     
     def enableNonDataButtons(self):
         self.portBtn['state']='normal'
         self.pasvbBtn['state']='normal'
+        self.typeBtn['state']='normal'
+
     
     def disableNonDataButtons(self):
         self.portBtn['state']='disabled'
         self.pasvbBtn['state']='disabled'
+        self.typeBtn['state']='disabled'
 
 
 class popupWindow(object):
