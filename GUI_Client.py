@@ -1,8 +1,7 @@
 import socket
 from tkinter import *
 
-ServerIP='127.0.0.1'
-port = 4500
+
 
 
 class FTPClient():
@@ -14,30 +13,11 @@ class FTPClient():
         self.passiveIP=None
         self.passivePort=None
         self.type='b'
-    def run(self):
-        self.conSoc.connect((ServerIP,port))
-        serverResp=''
-        while(serverResp==''):
-            serverResp=self.conSoc.recv(1024).decode('ascii')
+        self.list=''
 
-        print('S %s' % serverResp)
-        if(serverResp.startswith('220')):
-            self.login()
-        if(self.loggedIn==True):
-            while 1 & self.open==True:
-                command=input('Input next command..')
-                self.parseCommand(command)
+    def login(self,userName,password):
 
-
-                
-
-
-
-    def login(self):
-        #serverResp=self.conSoc.recv(1024).decode('ascii')
-       # print('S %s' % serverResp)
        while 1:
-            userName=input("type username..")
             loginMessage='USER '+userName+'\r\n'
             print('C %s' % loginMessage)
             self.conSoc.sendall(loginMessage.encode('ascii'))
@@ -45,7 +25,6 @@ class FTPClient():
             print('S %s' % serverResp)
 
             if(serverResp.startswith('331')):
-                password=input("type password..")
                 loginMessage='PASS '+password+'\r\n'
                 print('C %s' % loginMessage)
                 self.conSoc.sendall(loginMessage.encode('ascii'))
@@ -131,7 +110,7 @@ class FTPClient():
             splitResp=splitResp.split()
             splitIP=splitResp[4]
             splitIP=splitIP.split(",")
-            self.passiveIP=splitIP[0]+splitIP[1]+splitIP[2]+splitIP[3]
+            self.passiveIP='.'.join(splitIP[:4])
             self.passivePort=int(splitIP[4])*256+int(splitIP[5])
         elif(serverResp.startswith('5')):
             print('Error with parameters, retuning to menu..')
@@ -166,7 +145,7 @@ class FTPClient():
 
         if(self.passiveIP!=None):##Assume Passive
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            self.dataSoc.connect(self.passiveIP,self.passivePort)
+            self.dataSoc.connect((self.passiveIP,self.passivePort))
             newFile=open('new_'+filename,'w'+self.type)
 
             while 1:
@@ -218,7 +197,7 @@ class FTPClient():
 
         if(self.passiveIP!=None):##Assume Passive
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            self.dataSoc.connect(self.passiveIP,self.passivePort)
+            self.dataSoc.connect((self.passiveIP,self.passivePort))
             with open(filename,'r'+self.type) as f:##read as binary
                 toSend=f.read(1024)#using send for now instead of sendall
                 while (toSend):
@@ -240,8 +219,8 @@ class FTPClient():
         print('S %s'%serverResp)
         return
 
-    def Connect(self):
-        self.conSoc.connect((ServerIP,port))
+    def Connect(self,serverip,port):
+        self.conSoc.connect((serverip,port))
         serverResp=''
         while(serverResp==''):
             serverResp=self.conSoc.recv(1024).decode('ascii')
@@ -275,29 +254,30 @@ class FTPClient():
                     data=s1.recv(1024)
                     if not data:
                         break
-                    list+=data
+                    list+=data.decode()
 
                 s1.shutdown(socket.SHUT_RDWR)
                 s1.close()
 
                 print (list)
                 self.CloseDataSocket()
-                return list
+                self.list=list
 
             if(self.passiveIP!=None):##Assume Passive
                 self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-                self.dataSoc.connect(self.passiveIP,self.passivePort)
+                self.dataSoc.connect((self.passiveIP,self.passivePort))
                 
                 while 1:
                     data=self.dataSoc.recv(1024)
                     if not data:
                         break
-                    list+=data
+                    list+=data.decode()
 
                 self.dataSoc.close()
                 self.dataSoc=None
                 print (list)
-                return list
+
+                self.list=list
         else:
 
             print("No data soc")
@@ -319,31 +299,131 @@ class FTPClient():
         return
     
 
-thisClient=FTPClient()
 
-       
-window = Tk()
-window.title("FTP Client") 
-window.geometry('640x480')
+class GUIClient():
 
-loginBtn = Button(window, text="Login",command=thisClient.login)
-pasvbBtn = Button(window, text="PASV",command=thisClient.PASV)
+    def __init__(self,client):
 
-portBtn = Button(window, text="PORT",command=thisClient.PORT)
-typeBtn = Button(window, text="TYPE",command=thisClient.TYPE)
+        ##some state vars
+        self.connected=False
+        self.loggedIn=False
 
-connectBtn=Button(window, text="Connect",command=thisClient.Connect)
-listBtn=Button(window, text = 'LIST', command=thisClient.LIST)
+        self.FTPClient=client
+        self.window = Tk()
+        self.window.title("FTP Client") 
+        self.window.geometry('1280x1024')
+
+        self.loginBtn = Button(self.window, text="Login",command=self.doLogin)
+        self.pasvbBtn = Button(self.window, text="PASV",command=self.doPASV)
+
+        self.portBtn = Button(self.window, text="PORT",command=self.doPORT)
+        self.typeBtn = Button(self.window, text="TYPE",command=self.doTYPE)
+
+        self.connectBtn=Button(self.window, text="Connect",command=self.doConnect)
+        self.listBtn=Button(self.window, text = 'LIST', command=self.doList)
+
+        self.FileList=Text(self.window,height=20,width=50)
+        self.Log=Text(self.window,height=20,width=50)
+
+
+        self.loginBtn.grid(column=1, row=0)
+        self.pasvbBtn.grid(column=1, row=2)
+        self.portBtn.grid(column=1, row=4)
+        self.typeBtn.grid(column=1, row=6)
+        self.listBtn.grid(column=1, row =10)
+        self.connectBtn.grid(column=1, row=8)
+        self.Log.grid(column=5,row=3)
+        self.FileList.grid(column=7,row=3)
+
+        self.window.mainloop()
+
+    def doPopUp(self,label):
+        popup1=popupWindow(self.window,label)
+        self.window.wait_window(popup1.top)
+        return popup1.value
+
+
+    def doConnect(self):
+        
+        serverIP=self.doPopUp('Enter IP')
+        port=self.doPopUp('Enter Port')
+        try:
+            self.FTPClient.Connect(serverIP,int(port))
+            self.Log.insert(END,'Connected to Server. Login..\n')
+            self.connected=True
+        except:
+            self.Log.insert(END,'Could not Connect\n')
+        
+
+        return
+
+    def doLogin(self):
+        username=self.doPopUp('Enter username')
+
+        password=self.doPopUp('Enter password')
+
+        try:
+            self.FTPClient.login(username,password)
+            if(self.FTPClient.loggedIn):
+                self.Log.insert(END,'Logged in !\n')
+                self.loggedIn=True
+            else:
+                return
+        except:
+            self.Log.insert(END,'Could not log in...\n')
+        
+
+        return
+
+
+    def doTYPE(self):
+        return
+    
+
+    def doPORT(self):
+        return
+    
+    def doPASV(self):
+        self.FTPClient.PASV()
+        self.Log.insert(END,'Created Passive Data soc\n')
+        self.Log.insert(END,'Passive at: '+self.FTPClient.passiveIP +':'+str(self.FTPClient.passivePort))
+        return
+
+    def doList(self):
+        self.FTPClient.LIST()
+        self.FileList.insert(END,self.FTPClient.list)
+        return
+
+    
+
+        
+
+class popupWindow(object):
+    def __init__(self,master,title):
+        top=self.top=Toplevel(master,width=100,height=100)
+        top.after('1',lambda: top.focus_force())
+        self.l=Label(top,text=title)
+        self.l.pack()
+        self.e=Entry(top)
+        self.e.pack()
+        self.e.focus()
+        self.b=Button(top,text='Ok',command=self.cleanup)
+        top.bind('<Return>', self.returnPress)
+        self.b.pack()
+
+    def returnPress(self,e):
+        self.cleanup()
+
+    def cleanup(self):
+        self.value=self.e.get()
+        self.top.destroy()
 
 
 
-loginBtn.grid(column=1, row=0)
-pasvbBtn.grid(column=1, row=2)
-portBtn.grid(column=1, row=4)
-typeBtn.grid(column=1, row=6)
-connectBtn.grid(column=1, row=8)
-window.mainloop()
+guiClient=GUIClient(FTPClient())
+
+
+
     
 
 
-#thisClient.run()
