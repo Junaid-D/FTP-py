@@ -1,12 +1,13 @@
 import socket
 from tkinter import *
-
+from tkinter import filedialog
+import os
 
 
 
 class FTPClient():
     def __init__(self):
-        self.conSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.conSoc=None
         self.loggedIn=False
         self.open=True
         self.dataSoc=None
@@ -14,6 +15,18 @@ class FTPClient():
         self.passivePort=None
         self.type='b'
         self.list=''
+
+    def Connect(self,serverip,port):
+        self.conSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        
+        self.conSoc.connect((serverip,port))
+        serverResp=''
+        while(serverResp==''):
+            serverResp=self.conSoc.recv(1024).decode('ascii')
+
+        print('S %s' % serverResp)
+
+        return
 
     def login(self,userName,password):
 
@@ -53,9 +66,9 @@ class FTPClient():
         elif (command=='STRU'):
             self.STRU()
         elif (command=='RETR'):
-            self.RETR()
+            self.RETR('')
         elif (command=='STOR'):
-            self.STOR()
+            self.STOR('')
         elif (command=='NOOP'):
             self.NOOP()     
         else:
@@ -70,6 +83,7 @@ class FTPClient():
         if(serverResp.startswith('221')):
             self.open=False
             print('Connection closed by server.')
+            self.conSoc.shutdown(socket.SHUT_WR) 
             self.conSoc.close()
             return
 
@@ -158,14 +172,13 @@ class FTPClient():
             self.dataSoc=None
             return
 
-    def STOR(self):
+    def STOR(self,filename):
         if(self.passiveIP==None and self.dataSoc==None):
             print('No data connection was set up')
-            return
+            return 1
         
-        filename=input('Input filename\n')
-        
-        filenameOnServer=input('Called on server?\n')
+        head, filenameOnServer = os.path.split(filename)
+
         message='STOR '+filenameOnServer+'\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
@@ -190,7 +203,7 @@ class FTPClient():
 
 
             self.CloseDataSocket()
-            return
+            return 0
 
         if(self.passiveIP!=None):##Assume Passive
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -203,7 +216,9 @@ class FTPClient():
                     toSend=f.read(1024)
             self.dataSoc.close()
             self.dataSoc=None
-            return
+            return 0
+
+        
  
     def TYPE(self,type):
 
@@ -217,15 +232,6 @@ class FTPClient():
         else:
             return 1
 
-    def Connect(self,serverip,port):
-        self.conSoc.connect((serverip,port))
-        serverResp=''
-        while(serverResp==''):
-            serverResp=self.conSoc.recv(1024).decode('ascii')
-
-        print('S %s' % serverResp)
-
-        return
 
     def MODE(self):
         return
@@ -311,15 +317,22 @@ class GUIClient():
         self.window.title("FTP Client") 
         self.window.geometry('1280x1024')
 
+        self.connectBtn=Button(self.window, text="Connect",command=self.doConnect)        
         self.loginBtn = Button(self.window, text="Login",state=DISABLED,command=self.doLogin)
-        self.pasvbBtn = Button(self.window, text="PASV",state=DISABLED,command=self.doPASV)
+        self.quitBtn = Button(self.window, text="QUIT",state=DISABLED,command=self.doQUIT)
+
 
         self.portBtn = Button(self.window, text="PORT",state=DISABLED,command=self.doPORT)
+        self.pasvbBtn = Button(self.window, text="PASV",state=DISABLED,command=self.doPASV)
+        
+
         self.typeBtn = Button(self.window, text="TYPE",state=DISABLED,command=self.doTYPE)
 
-        self.connectBtn=Button(self.window, text="Connect",command=self.doConnect)
+
+
         self.listBtn=Button(self.window, text = 'LIST',state=DISABLED, command=self.doLIST)
         self.retrBtn=Button(self.window, text = 'RETR',state=DISABLED, command=self.doRETR)
+        self.storBtn=Button(self.window, text = 'STOR',state=DISABLED, command=self.doSTOR)
 
 
         self.FileList=Text(self.window,height=20,width=50)
@@ -327,27 +340,35 @@ class GUIClient():
 
 
         self.loginBtn.grid(column=1, row=0)
+        self.connectBtn.grid(column=1, row=8)
+        self.quitBtn.grid(column=2, row=10)
+
         self.pasvbBtn.grid(column=1, row=2)
         self.portBtn.grid(column=1, row=4)
+
         self.typeBtn.grid(column=1, row=6)
+
         self.listBtn.grid(column=1, row =10)
-        self.connectBtn.grid(column=1, row=8)
         self.retrBtn.grid(column=2,row=2)
+        self.storBtn.grid(column=2,row=4)
+
+
+        self.FileList.grid(column=8,row=3)
         self.Log.grid(column=5,row=3)
-        self.FileList.grid(column=7,row=3)
+
 
         self.window.mainloop()
 
-    def doPopUp(self,label):
-        popup1=popupWindow(self.window,label)
+    def doPopUp(self,label,defaultVal=''):
+        popup1=popupWindow(self.window,label,defaultVal)
         self.window.wait_window(popup1.top)
         return popup1.value
 
 
     def doConnect(self):
         
-        serverIP=self.doPopUp('Enter IP')
-        port=self.doPopUp('Enter Port')
+        serverIP=self.doPopUp('Enter IP','127.0.0.1')
+        port=self.doPopUp('Enter Port','4500')
         try:
             self.FTPClient.Connect(serverIP,int(port))
             self.Log.insert(END,'Connected to Server. Login..\n')
@@ -361,9 +382,9 @@ class GUIClient():
         return
 
     def doLogin(self):
-        username=self.doPopUp('Enter username')
+        username=self.doPopUp('Enter username','ADMIN')
 
-        password=self.doPopUp('Enter password')
+        password=self.doPopUp('Enter password','ADMIN')
 
         try:
             self.FTPClient.login(username,password)
@@ -371,6 +392,7 @@ class GUIClient():
                 self.Log.insert(END,'Logged in !\n')
                 self.loggedIn=True
                 self.loginBtn['state']='disabled'
+                self.quitBtn['state']='normal'
                 self.enableNonDataButtons()
             else:
                 self.disableNonDataButtons()
@@ -382,9 +404,19 @@ class GUIClient():
 
         return
 
+    def doQUIT(self):
+        self.FTPClient.QUIT()
+        self.disableDataButtons()
+        self.disableNonDataButtons()
+        self.loginBtn['state']='disabled'
+        self.connectBtn['state']='normal'
+        self.quitBtn['state']='disabled'
+        self.Log.insert(END,'Connection terminated.\n')
+
+        return
 
     def doTYPE(self):
-        type=self.doPopUp('Type? (I or A)')
+        type=self.doPopUp('Type? (I or A)','I')
         if( self.FTPClient.TYPE(type)==0):
             self.Log.insert(END,'Type set to '+type+'\n')
         else:
@@ -417,8 +449,33 @@ class GUIClient():
 
     def doLIST(self):
         self.FTPClient.LIST()
-        self.FileList.insert(END,self.FTPClient.list)
-        self.disableDataButtons()
+        try:
+            self.FileList.insert(END,self.FTPClient.list)
+            self.Log.insert(END,'list obtained \n')
+
+        except:
+            self.Log.insert(END,'Could not obtain list \n')
+
+        finally:
+            self.disableDataButtons()
+
+        return
+
+    def doSTOR(self):
+        filename =  filedialog.askopenfilename(initialdir = "/",title = "Select file",filetypes = [("all files","*.*")])
+        print(filename)
+        try:
+            if( self.FTPClient.STOR(filename)==0):
+                self.Log.insert(END, 'File: '+ filename+'uploaded \n')
+            else:
+                self.Log.insert(END, 'Could not upload \n')
+            
+        except:
+            self.Log.insert(END, 'Could not upload \n')
+
+        finally:
+            self.disableDataButtons()
+
         return
 
     def doRETR(self):
@@ -426,21 +483,23 @@ class GUIClient():
         try:
             self.FTPClient.RETR(filename)
             self.Log.insert(END,filename+'downloaded\n')
-            self.disableDataButtons()
         except:
             self.Log.insert(END,'Could not download...\n')
+        finally:
             self.disableDataButtons()
-
         return
 
     def enableDataButtons(self):
         self.listBtn['state']='normal'
         self.retrBtn['state']='normal'
+        self.storBtn['state']='normal'
 
 
     def disableDataButtons(self):
         self.listBtn['state']='disabled'
         self.retrBtn['state']='disabled'
+        self.storBtn['state']='disabled'
+
 
     
     def enableNonDataButtons(self):
@@ -456,12 +515,13 @@ class GUIClient():
 
 
 class popupWindow(object):
-    def __init__(self,master,title):
+    def __init__(self,master,title,default=''):
         top=self.top=Toplevel(master,width=100,height=100)
         top.after('1',lambda: top.focus_force())
         self.l=Label(top,text=title)
         self.l.pack()
         self.e=Entry(top)
+        self.e.insert(END,default)
         self.e.pack()
         self.e.focus()
         self.b=Button(top,text='Ok',command=self.cleanup)
