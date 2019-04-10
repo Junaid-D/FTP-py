@@ -141,11 +141,12 @@ class FTPClient():
         if(self.dataSoc!=None):##Assume active
             self.dataSoc.listen()
             s1,addr=self.dataSoc.accept()
-            newFile=open('new_'+filename,'w'+self.type)
+            newFile=open('new_'+filename,"w"+self.type)
 
             while 1:
                 data=s1.recv(1024)
                 if (not data): break##meaning the connection is closed in an 'orderly' way
+                if (self.type==''): data=data.decode('ascii')
                 newFile.write(data)
             
             newFile.close()        
@@ -157,11 +158,12 @@ class FTPClient():
         if(self.passiveIP!=None):##Assume Passive
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.dataSoc.connect((self.passiveIP,self.passivePort))
-            newFile=open('new_'+filename,'w'+self.type)
+            newFile=open('new_'+filename,"w"+self.type)
 
             while 1:
                 data=self.dataSoc.recv(1024)
                 if (not data): break##meaning the connection is closed in an 'orderly' way
+                if (self.type==''): data=data.decode('ascii')
                 newFile.write(data)
             
             newFile.close()        
@@ -190,7 +192,7 @@ class FTPClient():
             self.dataSoc.listen()
             s1,addr=self.dataSoc.accept()
 
-            with open(filename,'r'+self.type) as f:##read as binary
+            with open(filename,"r"+self.type) as f:##read as binary
                 toSend=f.read(1024)#using send for now instead of sendall
                 while (toSend):
                     if (self.type==''): toSend=toSend.encode('ascii')
@@ -208,7 +210,7 @@ class FTPClient():
         if(self.passiveIP!=None):##Assume Passive
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.dataSoc.connect((self.passiveIP,self.passivePort))
-            with open(filename,'r'+self.type) as f:##read as binary
+            with open(filename,"r"+self.type) as f:##read as binary
                 toSend=f.read(1024)#using send for now instead of sendall
                 while (toSend):
                     if (self.type==''): toSend=toSend.encode('ascii')
@@ -228,6 +230,8 @@ class FTPClient():
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
         if(serverResp.startswith('2')):
+            if(type=='I'):self.type='b'
+            else: self.type=''
             return 0 
         else:
             return 1
