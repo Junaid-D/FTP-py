@@ -15,7 +15,7 @@ class FTPClient():
         self.passivePort=None
         self.type='b'
         self.list=''
-
+        self.mode="S"
     def Connect(self,serverip,port):
         self.conSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         
@@ -237,7 +237,19 @@ class FTPClient():
             return 1
 
 
-    def MODE(self):
+    def MODE(self,mode):
+        message='MODE '+mode+'\r\n'
+        print('C %s'%message)
+        self.conSoc.sendall(message.encode('ascii'))
+        serverResp=self.conSoc.recv(1024).decode('ascii')
+        print('S %s'%serverResp)
+        if(serverResp.startswith('2')):
+            if(mode=='S'):self.mode='S'
+            elif(mode=='C'):self.mode='C'
+            else: self.mode='B'
+            return 0 
+        else:
+            return 1
         return
 
     def STRU(self):
@@ -426,7 +438,12 @@ class GUIClient():
         else:
             self.Log.insert(END,'Could not complete\n')
     
-
+    def doMODE(self):
+        mode=self.doPopUp('Mode? (S,B or C)','S')
+        if(self.FTPClient.MODE(mode)==0):
+            self.Log.insert(END,'Mode set to '+mode+'\n')
+        else:
+            self.Log.insert(END,'Could not complete\n')
     def doPORT(self):
         ip=self.doPopUp('Enter IP')
         port=self.doPopUp('Enter Port')
