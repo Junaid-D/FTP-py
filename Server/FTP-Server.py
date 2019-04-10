@@ -29,6 +29,7 @@ class myThread (threading.Thread):
         self.type='b'
         self.credentials=None
         self.currentPath=os.getcwd()
+        self.transferMode="S"
     def run(self):
         self.runServer()
      
@@ -247,12 +248,25 @@ class myThread (threading.Thread):
 
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.dataSoc.connect((self.activeIP,self.activePort))
-            with open(filename,'r'+self.type) as f:##read as binary
-                toSend=f.read(1024)#using send for now instead of sendall
-                while (toSend):
-                    if (self.type==''): toSend=toSend.encode('ascii')
-                    self.dataSoc.send(toSend)
-                    toSend=f.read(1024)
+            with open(filename,'r'+self.type) as f:##read as binary                if(self.transferMode=="S")
+                if(self.transferMode=='S'):
+                    toSend=f.read(1024)#using send for now instead of sendall
+                    while (toSend):
+                        if (self.type==''): toSend=toSend.encode('ascii')
+                        self.dataSoc.send(toSend)
+                        toSend=f.read(1024)
+                elif(self.transferMode=='B'):
+                    toSend=f.read(1024)#using send for now instead of sendall
+                    while (toSend):
+                        if (self.type==''): toSend=toSend.encode('ascii')
+                        self.dataSoc.send(toSend)
+                        toSend=f.read(1024)
+                elif(self.transferMode=='C'):
+                    toSend=f.read(1024)#using send for now instead of sendall
+                    while (toSend):
+                        if (self.type==''): toSend=toSend.encode('ascii')
+                        self.dataSoc.send(toSend)
+                        toSend=f.read(1024)
             self.CloseDataSoc()
             self.activeIP=None
             self.activePort=None
@@ -267,12 +281,24 @@ class myThread (threading.Thread):
             s1,addr=self.dataSoc.accept()
            
             with open(filename,'r'+self.type) as f:##read as binary
-                toSend=f.read(1024)#using send for now instead of sendall
-                while (toSend):
-                    if (self.type==''): toSend=toSend.encode('ascii')
-                    s1.send(toSend)
-                    toSend=f.read(1024)
-            
+                if(self.transferMode=='S'):
+                    toSend=f.read(1024)#using send for now instead of sendall
+                    while (toSend):
+                        if (self.type==''): toSend=toSend.encode('ascii')
+                        s1.send(toSend)
+                        toSend=f.read(1024)
+                elif(self.transferMode=='B'):
+                    toSend=f.read(1024)#using send for now instead of sendall
+                    while (toSend):
+                        if (self.type==''): toSend=toSend.encode('ascii')
+                        s1.send(toSend)
+                        toSend=f.read(1024)
+                elif(self.transferMode=='C'):
+                    toSend=f.read(1024)#using send for now instead of sendall
+                    while (toSend):
+                        if (self.type==''): toSend=toSend.encode('ascii')
+                        s1.send(toSend)
+                        toSend=f.read(1024)            
             self.dataSoc.close()
             self.dataSoc=None
             self.passiveIP=None
@@ -411,7 +437,15 @@ class myThread (threading.Thread):
 
 
         return
-
+    def MODE(self,newMode):
+        modes=['S','B','C']
+        if(newMode not in modes):
+            response='501 Invalid Mode\r\n'
+            self.conSoc.sendall(response.encode('ascii'))
+            return
+        self.transferMode=newMode;
+        response = '200 Mode Altered\r\n'
+        self.conSoc.sendall(response.encode('ascii'))
 with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as soc:
     #welcoming socket
     soc.bind((host,port))
