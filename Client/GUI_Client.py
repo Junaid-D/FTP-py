@@ -16,6 +16,7 @@ class FTPClient():
         self.type='b'
         self.list=''
         self.mode="S"
+        self.stru='F'
     def Connect(self,serverip,port):
         self.conSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         
@@ -62,9 +63,9 @@ class FTPClient():
         elif (command=='TYPE'):
             self.TYPE('')
         elif (command=='MODE'):
-            self.MODE()
+            self.MODE('')
         elif (command=='STRU'):
-            self.STRU()
+            self.STRU('')
         elif (command=='RETR'):
             self.RETR('')
         elif (command=='STOR'):
@@ -142,13 +143,12 @@ class FTPClient():
             self.dataSoc.listen()
             s1,addr=self.dataSoc.accept()
             newFile=open('new_'+filename,"w"+self.type)
-
-            while 1:
-                data=s1.recv(1024)
-                if (not data): break##meaning the connection is closed in an 'orderly' way
-                if (self.type==''): data=data.decode('ascii')
-                newFile.write(data)
-            
+            if(self.mode=='S'):
+                while 1:
+                    data=s1.recv(1024)
+                    if (not data): break##meaning the connection is closed in an 'orderly' way
+                    if (self.type==''): data=data.decode('ascii')
+                    newFile.write(data)
             newFile.close()        
             print('Transfer complete')
  
@@ -159,13 +159,12 @@ class FTPClient():
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.dataSoc.connect((self.passiveIP,self.passivePort))
             newFile=open('new_'+filename,"w"+self.type)
-
-            while 1:
-                data=self.dataSoc.recv(1024)
-                if (not data): break##meaning the connection is closed in an 'orderly' way
-                if (self.type==''): data=data.decode('ascii')
-                newFile.write(data)
-            
+            if(self.mode=='S'):
+                while 1:
+                    data=self.dataSoc.recv(1024)
+                    if (not data): break##meaning the connection is closed in an 'orderly' way
+                    if (self.type==''): data=data.decode('ascii')
+                    newFile.write(data)
             newFile.close()        
             print('Transfer complete')
             
@@ -245,14 +244,26 @@ class FTPClient():
         print('S %s'%serverResp)
         if(serverResp.startswith('2')):
             if(mode=='S'):self.mode='S'
-            elif(mode=='C'):self.mode='C'
-            else: self.mode='B'
+            #elif(mode=='C'):self.mode='C'
+            #else: self.mode='B'
             return 0 
         else:
             return 1
         return
 
-    def STRU(self):
+    def STRU(self, stru):
+        message='STRU '+stru+'\r\n'
+        print('C %s'%message)
+        self.conSoc.sendall(message.encode('ascii'))
+        serverResp=self.conSoc.recv(1024).decode('ascii')
+        print('S %s'%serverResp)
+        if(serverResp.startswith('2')):
+            if(stru=='F'):self.mode='S'
+            return 0 
+        else:
+            return 1
+        return
+
         return
 
     def LIST(self):

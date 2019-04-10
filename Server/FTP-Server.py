@@ -60,6 +60,10 @@ class myThread (threading.Thread):
                     self.QUIT()
                 elif receivedData[0]=='PORT':
                     self.PORT(receivedData[1])
+                elif receivedData[0]=='STRU':
+                    self.STRU(receivedData[1])
+                elif receivedData[0]=='MODE':
+                    self.MODE(receivedData[1])
                 elif receivedData[0]=='NOOP':
                     self.NOOP()
                 elif receivedData[0]=='RETR':
@@ -191,12 +195,12 @@ class myThread (threading.Thread):
             self.dataSoc.connect((self.activeIP,self.activePort))
             
             newFile=open('new_onserver_'+filename,"w"+self.type)
-            while 1:
-                data=self.dataSoc.recv(1024)
-                if (not data): break##meaning the connection is closed in an 'orderly' way
-                if (self.type==''): data=data.decode('ascii')
-                newFile.write(data)
-            
+            if(self.transferMode=='S'):
+                while 1:
+                    data=self.dataSoc.recv(1024)
+                    if (not data): break##meaning the connection is closed in an 'orderly' way
+                    if (self.type==''): data=data.decode('ascii')
+                    newFile.write(data)
             newFile.close()  
             self.CloseDataSoc()
             self.activeIP=None
@@ -223,13 +227,12 @@ class myThread (threading.Thread):
             s1,addr=self.dataSoc.accept()
 
             newFile=open('new_onserver_'+filename,"w"+self.type)
-            while 1:
-                data=s1.recv(1024)
-                if (not data): break##meaning the connection is closed in an 'orderly' way
-                if (self.type==''): data=data.decode('ascii')
-
-                newFile.write(data)
-            
+            if(self.transferMode=='S'):
+                while 1:
+                    data=s1.recv(1024)
+                    if (not data): break##meaning the connection is closed in an 'orderly' way
+                    if (self.type==''): data=data.decode('ascii')
+                    newFile.write(data)
             newFile.close() 
             self.dataSoc.close()
             self.dataSoc=None 
@@ -441,13 +444,24 @@ class myThread (threading.Thread):
 
         return
     def MODE(self,newMode):
-        modes=['S','B','C']
+        #modes=['S','B','C']
+        modes=['S']
         if(newMode not in modes):
-            response='501 Invalid Mode\r\n'
+            response='504 Command not implemented for that parameter\r\n'
             self.conSoc.sendall(response.encode('ascii'))
             return
-        self.transferMode=newMode
+        #self.transferMode=newMode
         response = '200 Mode Altered\r\n'
+        self.conSoc.sendall(response.encode('ascii'))
+    def STRU(self,newStru):
+        #modes=['S','B','C']
+        strus=['S']
+        if(newStru not in strus):
+            response='504 Command not implemented for that parameter\r\n'
+            self.conSoc.sendall(response.encode('ascii'))
+            return
+        #self.structure=newMode
+        response = '200 Structure Altered\r\n'
         self.conSoc.sendall(response.encode('ascii'))
 with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as soc:
     #welcoming socket
