@@ -1,7 +1,9 @@
 import socket
 from tkinter import *
 from tkinter import filedialog
+from tkinter import ttk
 import os
+from ttkthemes import ThemedTk
 
 
 
@@ -340,48 +342,49 @@ class GUIClient():
         self.loggedIn=False
 
         self.FTPClient=client
-        self.window = Tk()
+        self.window = ThemedTk(theme="equilux")
+        self.window.configure(background='gray50')
         self.window.title("FTP Client") 
-        self.window.geometry('1280x1024')
+        self.window.geometry('1024x640')
 
-        self.connectBtn=Button(self.window, text="Connect",command=self.doConnect)        
-        self.loginBtn = Button(self.window, text="Login",state=DISABLED,command=self.doLogin)
-        self.quitBtn = Button(self.window, text="QUIT",state=DISABLED,command=self.doQUIT)
+        self.connectBtn=ttk.Button(self.window, text="Connect",command=self.doConnect)        
+        self.loginBtn = ttk.Button(self.window, text="Login",state=DISABLED,command=self.doLogin)
+        self.quitBtn = ttk.Button(self.window, text="QUIT",state=DISABLED,command=self.doQUIT)
 
 
-        self.portBtn = Button(self.window, text="PORT",state=DISABLED,command=self.doPORT)
-        self.pasvbBtn = Button(self.window, text="PASV",state=DISABLED,command=self.doPASV)
+        self.portBtn = ttk.Button(self.window, text="PORT",state=DISABLED,command=self.doPORT)
+        self.pasvbBtn = ttk.Button(self.window, text="PASV",state=DISABLED,command=self.doPASV)
         
 
-        self.typeBtn = Button(self.window, text="TYPE",state=DISABLED,command=self.doTYPE)
+        self.typeBtn = ttk.Button(self.window, text="TYPE",state=DISABLED,command=self.doTYPE)
 
 
 
-        self.listBtn=Button(self.window, text = 'LIST',state=DISABLED, command=self.doLIST)
-        self.retrBtn=Button(self.window, text = 'RETR',state=DISABLED, command=self.doRETR)
-        self.storBtn=Button(self.window, text = 'STOR',state=DISABLED, command=self.doSTOR)
+        self.listBtn = ttk.Button(self.window, text = 'LIST',state=DISABLED, command=self.doLIST)
+        self.retrBtn = ttk.Button(self.window, text = 'RETR',state=DISABLED, command=self.doRETR)
+        self.storBtn = ttk.Button(self.window, text = 'STOR',state=DISABLED, command=self.doSTOR)
 
 
-        self.FileList=Text(self.window,height=20,width=50)
-        self.Log=Text(self.window,height=20,width=50)
+        self.FileList=Text(self.window,height=20,width=50,background='gray42',fg='orange')
+        self.Log=Text(self.window,height=20,width=50,background='gray42',fg='orange')
 
 
         self.loginBtn.grid(column=1, row=0)
-        self.connectBtn.grid(column=1, row=8)
-        self.quitBtn.grid(column=2, row=10)
+        self.connectBtn.grid(column=2, row=0)
+        self.quitBtn.grid(column=1, row=1)
 
         self.pasvbBtn.grid(column=1, row=2)
-        self.portBtn.grid(column=1, row=4)
+        self.portBtn.grid(column=2, row=2)
 
-        self.typeBtn.grid(column=1, row=6)
+        self.typeBtn.grid(column=1, row=10)
 
-        self.listBtn.grid(column=1, row =10)
-        self.retrBtn.grid(column=2,row=2)
-        self.storBtn.grid(column=2,row=4)
+        self.listBtn.grid(column=1, row =5)
+        self.retrBtn.grid(column=2,row=4)
+        self.storBtn.grid(column=2,row=5)
 
 
-        self.FileList.grid(column=8,row=3)
-        self.Log.grid(column=5,row=3)
+        self.FileList.grid(column=9,row=3)
+        self.Log.grid(column=7,row=3)
 
 
         self.window.mainloop()
@@ -549,14 +552,15 @@ class GUIClient():
 class popupWindow(object):
     def __init__(self,master,title,default=''):
         top=self.top=Toplevel(master,width=100,height=100)
+        top.configure(background='gray42')
         top.after('1',lambda: top.focus_force())
-        self.l=Label(top,text=title)
+        self.l=ttk.Label(top,text=title)
         self.l.pack()
-        self.e=Entry(top)
+        self.e=ttk.Entry(top)
         self.e.insert(END,default)
         self.e.pack()
         self.e.focus()
-        self.b=Button(top,text='Ok',command=self.cleanup)
+        self.b=ttk.Button(top,text='Ok',command=self.cleanup)
         top.bind('<Return>', self.returnPress)
         self.b.pack()
 
