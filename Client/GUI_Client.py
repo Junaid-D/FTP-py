@@ -266,8 +266,6 @@ class FTPClient():
             return 1
         return
 
-        return
-
     def LIST(self):
         message = 'LIST \r\n'
         print('C %s'%message)
@@ -316,6 +314,25 @@ class FTPClient():
             print("No data soc")
             return
 
+    def PWD(self):
+        message='PWD\r\n'
+        print('C %s'%message)
+        self.conSoc.sendall(message.encode('ascii'))
+        serverResp=self.conSoc.recv(1024).decode('ascii')
+        print('S %s'%serverResp)
+        return serverResp[3:-2]
+
+    def CWD(self,newDir):
+        message='CWD '+newDir+'\r\n'
+        print('C %s'%message)
+        self.conSoc.sendall(message.encode('ascii'))
+        serverResp=self.conSoc.recv(1024).decode('ascii')
+        print('S %s'%serverResp)
+        if(serverResp.startswith('2')):
+            return 0
+        else:
+            return 1
+
 
 
     def NOOP(self):
@@ -357,6 +374,8 @@ class GUIClient():
         
 
         self.typeBtn = ttk.Button(self.window, text="TYPE",state=DISABLED,command=self.doTYPE)
+        self.pwdBtn = ttk.Button(self.window, text="PWD",state=DISABLED,command=self.doPWD)
+        self.cwdBtn = ttk.Button(self.window, text="CWD",state=DISABLED,command=self.doCWD)
 
 
 
@@ -377,6 +396,9 @@ class GUIClient():
         self.portBtn.grid(column=2, row=2)
 
         self.typeBtn.grid(column=1, row=10)
+        self.pwdBtn.grid(column=1, row=11)
+        self.cwdBtn.grid(column=1, row=12)
+
 
         self.listBtn.grid(column=1, row =5)
         self.retrBtn.grid(column=2,row=4)
@@ -524,6 +546,28 @@ class GUIClient():
             self.disableDataButtons()
         return
 
+    def doPWD(self):
+
+        try:
+            curerntPath=self.FTPClient.PWD()
+            self.Log.insert(END,curerntPath+' is the current path\n')
+        except:
+            self.Log.insert(END,'Could not retrieve cwd...\n')
+        return
+
+    def doCWD(self):
+        newDir=self.doPopUp('Directory?')
+
+        try:
+            if(self.FTPClient.CWD(newDir)==0):
+                self.Log.insert(END,'Path was changes to: '+ newDir+'\n')
+            else:
+                self.Log.insert(END,'Could not change dir\n')
+
+        except:
+            self.Log.insert(END,'Could not change dir\n')
+        return
+
     def enableDataButtons(self):
         self.listBtn['state']='normal'
         self.retrBtn['state']='normal'
@@ -541,12 +585,18 @@ class GUIClient():
         self.portBtn['state']='normal'
         self.pasvbBtn['state']='normal'
         self.typeBtn['state']='normal'
+        self.pwdBtn['state']='normal'
+        self.cwdBtn['state']='normal'
 
     
     def disableNonDataButtons(self):
         self.portBtn['state']='disabled'
         self.pasvbBtn['state']='disabled'
         self.typeBtn['state']='disabled'
+        self.pwdBtn['state']='disabled'
+        self.cwdBtn['state']='disabled'
+
+
 
 
 class popupWindow(object):

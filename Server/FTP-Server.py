@@ -349,7 +349,7 @@ class myThread (threading.Thread):
          
     def PWD(self):
         path = self.currentPath
-        response='257 "'+path+'" returned path.\r\n'
+        response='257 '+path+'\r\n'
         self.conSoc.sendall(response.encode('ascii'))
         return
 
