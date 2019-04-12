@@ -42,52 +42,53 @@ class myThread (threading.Thread):
         
 
     def runServer(self):
+        greeting= '220 Service ready for new user\r\n'
+        self.conSoc.sendall(greeting.encode('ascii'))
 
         self.ReadCredentials()
+        while(self.open==True):
+            if(self.authorized==False):#greeting
+                self.USER()
+                
+            if(self.authorized==True):
+                while 1 & self.open==True:
+                    rec_data=self.conSoc.recv(1024)
+                    decoded=rec_data.decode('ascii')
+                    if not rec_data:
+                        break     
 
-        if(self.authorized==False):#greeting
-            self.USER()
-        if(self.authorized==True):
-            while 1 & self.open==True:
-                rec_data=self.conSoc.recv(1024)
-                decoded=rec_data.decode('ascii')
-                if not rec_data:
-                    break     
-
-                receivedData=self.parseCommand(decoded)    
-                print("Received",receivedData)
-                if receivedData[0]=='QUIT':
-                    self.QUIT()
-                elif receivedData[0]=='PORT':
-                    self.PORT(receivedData[1])
-                elif receivedData[0]=='STRU':
-                    self.STRU(receivedData[1])
-                elif receivedData[0]=='MODE':
-                    self.MODE(receivedData[1])
-                elif receivedData[0]=='NOOP':
-                    self.NOOP()
-                elif receivedData[0]=='RETR':
-                    self.RETR(receivedData[1])
-                elif receivedData[0]=='TYPE':
-                    self.TYPE(receivedData[1])
-                elif receivedData[0]=='STOR':
-                    self.STOR(receivedData[1])
-                elif receivedData[0]=='SYST':
-                    self.SYST()
-                elif receivedData[0]=='FEAT':
-                    self.FEAT()
-                elif receivedData[0]=='PWD':
-                    self.PWD()
-                elif receivedData[0]=='LIST':
-                    self.LIST(receivedData[1])
-                elif receivedData[0]=='PASV':
-                    self.PASV()
-                elif receivedData[0]=='CWD':
-                    self.CWD(receivedData[1])
-                else:
-                    self.UNKNOWN()
-
-        print('Server is shutting down.')    
+                    receivedData=self.parseCommand(decoded)    
+                    print("Received",receivedData)
+                    if receivedData[0]=='QUIT':
+                        self.QUIT()
+                    elif receivedData[0]=='PORT':
+                        self.PORT(receivedData[1])
+                    elif receivedData[0]=='STRU':
+                        self.STRU(receivedData[1])
+                    elif receivedData[0]=='MODE':
+                        self.MODE(receivedData[1])
+                    elif receivedData[0]=='NOOP':
+                        self.NOOP()
+                    elif receivedData[0]=='RETR':
+                        self.RETR(receivedData[1])
+                    elif receivedData[0]=='TYPE':
+                        self.TYPE(receivedData[1])
+                    elif receivedData[0]=='STOR':
+                        self.STOR(receivedData[1])
+                    elif receivedData[0]=='SYST':
+                        self.SYST()
+                    elif receivedData[0]=='FEAT':
+                        self.FEAT()
+                    elif receivedData[0]=='PWD':
+                        self.PWD()
+                    elif receivedData[0]=='LIST':
+                        self.LIST(receivedData[1])
+                    elif receivedData[0]=='PASV':
+                        self.PASV()
+                    elif receivedData[0]=='CWD':
+                        self.CWD(receivedData[1])
+                    else:
+                        self.UNKNOWN()
 
 
     def UNKNOWN(self):
@@ -110,8 +111,6 @@ class myThread (threading.Thread):
         print(self.credentials)
 
     def USER(self):
-        greeting= '220 Service ready for new user\r\n'
-        self.conSoc.sendall(greeting.encode('ascii'))
         rec_data=self.conSoc.recv(1024)
         response=self.parseCommand(rec_data.decode('ascii'))
         print('C %s'%response)
@@ -122,10 +121,30 @@ class myThread (threading.Thread):
 
         self.PASS()
 
+
+    def PASS(self):
+        rec_data=self.conSoc.recv(1024)
+        response=self.parseCommand(rec_data.decode('ascii'))
+        print('C ',response)
+        if(response[0]!='PASS'):
+            response='530 Not logged in\r\n'
+            self.conSoc.sendall(response.encode('ascii'))
+            return
+        self.password=response[1]
+        self.verifyUser()
+        if(self.authorized):
+            response='200 Success\r\n'
+            self.conSoc.sendall(response.encode('ascii'))
+        else:
+            response='430 Invalid login\r\n'
+            self.conSoc.sendall(response.encode('ascii'))
+
     def QUIT(self):
         response='221 Service closing control connection\r\n'
         self.conSoc.sendall(response.encode('ascii'))
         self.open=False
+        print('Server is shutting down for user %s'%self.user)    
+
 
     def PORT(self,args):
         splitArgs=args.split(',')
@@ -247,6 +266,17 @@ class myThread (threading.Thread):
     def RETR(self,filename):
         
         filename=self.currentPath+'\\'+filename
+        if(os.path.exists(filename)!=True):
+            fileNotFound='550 File does not exist.\r\n'
+            self.conSoc.sendall(fileNotFound.encode('ascii'))
+            return
+
+        if(os.path.isfile(filename)!=True):
+            fileNotFound='550 is not a file.\r\n'
+            self.conSoc.sendall(fileNotFound.encode('ascii'))
+            return
+            ####early exits
+
         ###active
         if(self.activeIP is not None):
             transferAccept='250 Accepted\r\n'
@@ -329,23 +359,6 @@ class myThread (threading.Thread):
     def FEAT(self):
         response='211 RETR PORT\r\n'
         self.conSoc.sendall(response.encode('ascii'))     
-    
-    def PASS(self):
-        rec_data=self.conSoc.recv(1024)
-        response=self.parseCommand(rec_data.decode('ascii'))
-        print('C ',response)
-        if(response[0]!='PASS'):
-            response='530 Not logged in\r\n'
-            self.conSoc.sendall(response.encode('ascii'))
-            return
-        self.password=response[1]
-        self.verifyUser()
-        if(self.authorized):
-            response='200 Success\r\n'
-            self.conSoc.sendall(response.encode('ascii'))
-        else:
-            response='430 Invalid login\r\n'
-            self.conSoc.sendall(response.encode('ascii'))
          
     def PWD(self):
         path = self.currentPath

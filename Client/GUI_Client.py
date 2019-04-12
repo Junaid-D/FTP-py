@@ -33,49 +33,25 @@ class FTPClient():
 
     def login(self,userName,password):
 
-       while 1:
-            loginMessage='USER '+userName+'\r\n'
+        loginMessage='USER '+userName+'\r\n'
+        print('C %s' % loginMessage)
+        self.conSoc.sendall(loginMessage.encode('ascii'))
+        serverResp=self.conSoc.recv(1024).decode('ascii')
+        print('S %s' % serverResp)
+
+        if(serverResp.startswith('331')):
+            loginMessage='PASS '+password+'\r\n'
             print('C %s' % loginMessage)
             self.conSoc.sendall(loginMessage.encode('ascii'))
-            serverResp=self.conSoc.recv(1024).decode('ascii')
-            print('S %s' % serverResp)
-
-            if(serverResp.startswith('331')):
-                loginMessage='PASS '+password+'\r\n'
-                print('C %s' % loginMessage)
-                self.conSoc.sendall(loginMessage.encode('ascii'))
-            else:
-                continue
-                
-            serverResp=self.conSoc.recv(1024).decode('ascii')
-            print('S %s' % serverResp)
-
-            if(serverResp.startswith('200')):
-                self.loggedIn=True
-                print("Login success!")
-                break
-
-    def parseCommand(self,command):
-        if (command=='QUIT'):
-            self.QUIT() 
-        elif (command=='PORT'):
-            self.PORT('','')
-        elif (command=="PASV"):
-            self.PASV()
-        elif (command=='TYPE'):
-            self.TYPE('')
-        elif (command=='MODE'):
-            self.MODE('')
-        elif (command=='STRU'):
-            self.STRU('')
-        elif (command=='RETR'):
-            self.RETR('')
-        elif (command=='STOR'):
-            self.STOR('')
-        elif (command=='NOOP'):
-            self.NOOP()     
         else:
-            print('Invalid Command')
+            return
+                
+        serverResp=self.conSoc.recv(1024).decode('ascii')
+        print('S %s' % serverResp)
+
+        if(serverResp.startswith('200')):
+            self.loggedIn=True
+            print("Login success!")
 
     def QUIT(self):  
         message='QUIT\r\n'
@@ -84,6 +60,7 @@ class FTPClient():
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
         if(serverResp.startswith('221')):
+            self.loggedIn=False
             self.open=False
             print('Connection closed by server.')
             self.conSoc.shutdown(socket.SHUT_WR) 
@@ -359,8 +336,7 @@ class GUIClient():
         self.loggedIn=False
 
         self.FTPClient=client
-        self.window = ThemedTk(theme="equilux")
-        self.window.configure(background='gray50')
+        self.window = ThemedTk(theme="equilux",background='gray40')
         self.window.title("FTP Client") 
         self.window.geometry('1024x640')
 
@@ -428,7 +404,7 @@ class GUIClient():
             self.connectBtn['state']='disabled'
             self.loginBtn['state']='normal'
         except:
-            self.Log.insert(END,'Could not Connect\n')
+            self.Log.insert(END,'Could not Connect... Please check firewall settings or server status\n')
         
 
         return
@@ -448,6 +424,8 @@ class GUIClient():
                 self.enableNonDataButtons()
             else:
                 self.disableNonDataButtons()
+                self.Log.insert(END,'Invalid login\n')
+
                 return
         except:
             self.disableNonDataButtons()
