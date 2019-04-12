@@ -3,6 +3,7 @@ from tkinter import *
 from tkinter import filedialog
 from tkinter import ttk
 import os
+import csv
 from ttkthemes import ThemedTk
 
 
@@ -19,6 +20,7 @@ class FTPClient():
         self.list=''
         self.mode="S"
         self.stru='F'
+        self.textExtensions=None
     def Connect(self,serverip,port):
         self.conSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         
@@ -30,9 +32,24 @@ class FTPClient():
         print('S %s' % serverResp)
 
         return
-
+    def CheckExtension(self,file):
+        name,ext=os.path.splitext(file)
+        print(ext)
+        if(ext not in self.textExtensions):
+            self.type='b'
+        else:
+            self.type=''
+        print(self.type)
+    def loadExtensions(self):
+        with open('extensions.txt') as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            self.textExtensions=['.txt']
+            for row in csv_reader:
+                for ext in row:
+                    self.textExtensions.append(ext)
+        print(self.textExtensions)
     def login(self,userName,password):
-
+        self.loadExtensions()
         loginMessage='USER '+userName+'\r\n'
         print('C %s' % loginMessage)
         self.conSoc.sendall(loginMessage.encode('ascii'))
@@ -52,6 +69,7 @@ class FTPClient():
         if(serverResp.startswith('200')):
             self.loggedIn=True
             print("Login success!")
+        
 
     def QUIT(self):  
         message='QUIT\r\n'
@@ -120,7 +138,8 @@ class FTPClient():
 
         if(serverResp.startswith('5') == True):
             return 1
-
+        
+        self.CheckExtension(filename)
 
         if(self.dataSoc!=None):##Assume active
             self.dataSoc.listen()
@@ -162,6 +181,7 @@ class FTPClient():
             return 1
         
         head, filenameOnServer = os.path.split(filename)
+        self.CheckExtension(filenameOnServer)
 
         message='STOR '+filenameOnServer+'\r\n'
         print('C %s'%message)

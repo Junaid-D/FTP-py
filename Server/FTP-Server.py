@@ -28,6 +28,7 @@ class myThread (threading.Thread):
         self.structure='File'
         self.type='b'
         self.credentials=None
+        self.textExtensions=None
         self.currentPath=os.getcwd()
         self.transferMode='S'
     def run(self):
@@ -46,6 +47,7 @@ class myThread (threading.Thread):
         self.conSoc.sendall(greeting.encode('ascii'))
 
         self.ReadCredentials()
+        self.ReadExtensions()
         while(self.open==True):
             if(self.authorized==False):#greeting
                 self.USER()
@@ -111,6 +113,26 @@ class myThread (threading.Thread):
             for row in csv_reader:
                 self.credentials.append((row[0],row[1]))
         print(self.credentials)
+    def ReadExtensions(self):
+        with open('extensions.txt') as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            self.textExtensions=['.txt']
+            for extList in csv_reader:
+                for ext in extList:
+                    self.textExtensions.append(ext)
+        print(self.textExtensions)
+    def CheckExtension(self,file):
+        name,ext=os.path.splitext(file)
+        print(ext)
+        if(ext not in self.textExtensions):
+            self.type='b'
+        else:
+            self.type=''
+    def SendExtension(self,soc):
+        for ext in self.textExtensions:
+            toSend=ext
+            toSend=toSend.encode('ascii')
+            soc.send(toSend)
 
     def USER(self):
         rec_data=self.conSoc.recv(1024)
@@ -198,6 +220,7 @@ class myThread (threading.Thread):
         self.conSoc.sendall(response.encode('ascii'))
 
     def STOR(self,filename):
+        self.CheckExtension(filename)
         ###active
         if(self.activeIP is not None):
             try:
@@ -266,8 +289,10 @@ class myThread (threading.Thread):
         return
     
     def RETR(self,filename):
-        
+        self.CheckExtension(filename)
+
         filename=self.currentPath+'\\'+filename
+
         if(os.path.exists(filename)!=True):
             fileNotFound='550 File does not exist.\r\n'
             self.conSoc.sendall(fileNotFound.encode('ascii'))
