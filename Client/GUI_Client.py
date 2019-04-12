@@ -110,13 +110,17 @@ class FTPClient():
     def RETR(self,filename):#stream--server will close connection, block-- eof block will be sent
         if(self.passiveIP==None and self.dataSoc==None):
             print('No data connection was set up')
-            return
+            return 2
         
         message='RETR '+filename+'\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
+
+        if(serverResp.startswith('5') !=True):
+            return 1
+
 
         if(self.dataSoc!=None):##Assume active
             self.dataSoc.listen()
@@ -132,7 +136,7 @@ class FTPClient():
             print('Transfer complete')
  
             self.CloseDataSocket()
-            return
+            return 0
 
         if(self.passiveIP!=None):##Assume Passive
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -150,7 +154,7 @@ class FTPClient():
 
             self.dataSoc.close()
             self.dataSoc=None
-            return
+            return 0
 
     def STOR(self,filename):
         if(self.passiveIP==None and self.dataSoc==None):
@@ -207,6 +211,7 @@ class FTPClient():
         self.conSoc.sendall(message.encode('ascii'))
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
+
         if(serverResp.startswith('2')):
             if(type=='I'):self.type='b'
             else: self.type=''
@@ -221,10 +226,9 @@ class FTPClient():
         self.conSoc.sendall(message.encode('ascii'))
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
+
         if(serverResp.startswith('2')):
             if(mode=='S'):self.mode='S'
-            #elif(mode=='C'):self.mode='C'
-            #else: self.mode='B'
             return 0 
         else:
             return 1
@@ -310,7 +314,16 @@ class FTPClient():
         else:
             return 1
 
-
+    def MKD(self,newDir):
+        message='MKD '+newDir+'\r\n'
+        print('C %s'%message)
+        self.conSoc.sendall(message.encode('ascii'))
+        serverResp=self.conSoc.recv(1024).decode('ascii')
+        print('S %s'%serverResp)
+        if(serverResp.startswith('2')):
+            return 0
+        else:
+            return 1
 
     def NOOP(self):
         message='NOOP\r\n'
@@ -320,7 +333,6 @@ class FTPClient():
         print('S %s'%serverResp)
         return
     def CloseDataSocket(self):
-        #self.dataSoc.shutdown(socket.SHUT_RDWR)
         self.dataSoc.close()
         self.dataSoc=None
         return
@@ -350,8 +362,15 @@ class GUIClient():
         
 
         self.typeBtn = ttk.Button(self.window, text="TYPE",state=DISABLED,command=self.doTYPE)
+        self.struBtn = ttk.Button(self.window, text="STRU",state=DISABLED,command=self.doSTRU)
+        self.modeBtn = ttk.Button(self.window, text="MODE",state=DISABLED,command=self.doMODE)
+
+
+
+
         self.pwdBtn = ttk.Button(self.window, text="PWD",state=DISABLED,command=self.doPWD)
         self.cwdBtn = ttk.Button(self.window, text="CWD",state=DISABLED,command=self.doCWD)
+        self.mkdBtn = ttk.Button(self.window, text="MKD",state=DISABLED,command=self.doMKD)
 
 
 
@@ -371,9 +390,15 @@ class GUIClient():
         self.pasvbBtn.grid(column=1, row=2)
         self.portBtn.grid(column=2, row=2)
 
-        self.typeBtn.grid(column=1, row=10)
+
+        self.typeBtn.grid(column=1, row=8)
+        self.modeBtn.grid(column=1, row=9)
+        self.struBtn.grid(column=1, row=10)
+
+
         self.pwdBtn.grid(column=1, row=11)
         self.cwdBtn.grid(column=1, row=12)
+        self.mkdBtn.grid(column=1, row=13)
 
 
         self.listBtn.grid(column=1, row =5)
@@ -396,7 +421,7 @@ class GUIClient():
     def doConnect(self):
         
         serverIP=self.doPopUp('Enter IP','127.0.0.1')
-        port=self.doPopUp('Enter Port','4500')
+        port=self.doPopUp('Enter Port','21')
         try:
             self.FTPClient.Connect(serverIP,int(port))
             self.Log.insert(END,'Connected to Server. Login..\n')
@@ -458,6 +483,14 @@ class GUIClient():
             self.Log.insert(END,'Mode set to '+mode+'\n')
         else:
             self.Log.insert(END,'Could not complete\n')
+
+    def doSTRU(self):
+        ftype=self.doPopUp('Fileype?','F')
+        if(self.FTPClient.STRU(ftype)==0):
+            self.Log.insert(END,'Filetype set to '+ftype+'\n')
+        else:
+            self.Log.insert(END,'Could not complete\n')
+
     def doPORT(self):
         ip=self.doPopUp('Enter IP')
         port=self.doPopUp('Enter Port')
@@ -516,8 +549,11 @@ class GUIClient():
     def doRETR(self):
         filename=self.doPopUp('Filename?')
         try:
-            self.FTPClient.RETR(filename)
-            self.Log.insert(END,filename+'downloaded\n')
+            res=self.FTPClient.RETR(filename)
+            if(res==0):
+                self.Log.insert(END,filename+'download complete\n')
+            else:
+                self.Log.insert(END,'Could not download...\n')
         except:
             self.Log.insert(END,'Could not download...\n')
         finally:
@@ -546,6 +582,21 @@ class GUIClient():
             self.Log.insert(END,'Could not change dir\n')
         return
 
+    def doMKD(self):
+        newDir=self.doPopUp('Directory?')
+
+        try:
+            if(self.FTPClient.MKD(newDir)==0):
+                self.Log.insert(END,'Directory created: '+ newDir+'\n')
+            else:
+                self.Log.insert(END,'Could not create dir\n')
+
+        except:
+            self.Log.insert(END,'Could not create dir\n')
+        return
+    
+
+
     def enableDataButtons(self):
         self.listBtn['state']='normal'
         self.retrBtn['state']='normal'
@@ -565,6 +616,9 @@ class GUIClient():
         self.typeBtn['state']='normal'
         self.pwdBtn['state']='normal'
         self.cwdBtn['state']='normal'
+        self.mkdBtn['state']='normal'
+        self.modeBtn['state']='normal'
+        self.struBtn['state']='normal'
 
     
     def disableNonDataButtons(self):
@@ -573,6 +627,9 @@ class GUIClient():
         self.typeBtn['state']='disabled'
         self.pwdBtn['state']='disabled'
         self.cwdBtn['state']='disabled'
+        self.mkdBtn['state']='disabled'
+        self.modeBtn['state']='disabled'
+        self.struBtn['state']='disabled'
 
 
 

@@ -87,6 +87,8 @@ class myThread (threading.Thread):
                         self.PASV()
                     elif receivedData[0]=='CWD':
                         self.CWD(receivedData[1])
+                    elif receivedData[0]=='MKD':
+                        self.MKD(receivedData[1])
                     else:
                         self.UNKNOWN()
 
@@ -158,6 +160,7 @@ class myThread (threading.Thread):
         self.activeIP=ip
         self.activePort=port
         #do not use data port immediately
+
     def PASV(self):
         print('Initiating passive data port')
         self.passiveIP=host
@@ -240,8 +243,7 @@ class myThread (threading.Thread):
             transferAccept='250 Accepted\r\n'
             self.conSoc.sendall(transferAccept.encode('ascii'))
 
-            #self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            #self.dataSoc.bind((self.passiveIP,self.passivePort))
+        
             self.dataSoc.listen()
             s1,addr=self.dataSoc.accept()
 
@@ -453,29 +455,48 @@ class myThread (threading.Thread):
         else:## pwd doesnt exist
             response='550 Requested action not taken\r\n'
             self.conSoc.send(response.encode('ascii'))
-
-
         return
+
+
     def MODE(self,newMode):
-        #modes=['S','B','C']
         modes=['S']
         if(newMode not in modes):
             response='504 Command not implemented for that parameter\r\n'
             self.conSoc.sendall(response.encode('ascii'))
             return
-        #self.transferMode=newMode
         response = '200 Mode Altered\r\n'
         self.conSoc.sendall(response.encode('ascii'))
+
+
     def STRU(self,newStru):
-        #modes=['S','B','C']
-        strus=['S']
+        strus=['F']
         if(newStru not in strus):
             response='504 Command not implemented for that parameter\r\n'
             self.conSoc.sendall(response.encode('ascii'))
             return
-        #self.structure=newMode
         response = '200 Structure Altered\r\n'
         self.conSoc.sendall(response.encode('ascii'))
+
+    def MKD(self,directory):
+        if('\\' not in directory):#if not full path sent
+            directory=self.currentPath+'\\'+directory
+
+        if (os.path.exists(directory)):
+            response='550 already exits\r\n'
+            self.conSoc.sendall(response.encode('ascii'))
+
+        try:
+            os.mkdir(directory)
+            response='257 Dir '+directory+'created\r\n'
+            self.conSoc.sendall(response.encode('ascii'))
+        except:
+            response='550 MKD failed \r\n'
+            self.conSoc.sendall(response.encode('ascii'))
+
+
+
+
+
 with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as soc:
     #welcoming socket
     soc.bind((host,port))
