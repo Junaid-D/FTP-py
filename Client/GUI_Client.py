@@ -118,7 +118,7 @@ class FTPClient():
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
 
-        if(serverResp.startswith('5') !=True):
+        if(serverResp.startswith('5') == True):
             return 1
 
 
@@ -350,7 +350,7 @@ class GUIClient():
         self.FTPClient=client
         self.window = ThemedTk(theme="equilux",background='gray40')
         self.window.title("FTP Client") 
-        self.window.geometry('1024x640')
+        self.window.geometry('1200x640')
 
         self.connectBtn=ttk.Button(self.window, text="Connect",command=self.doConnect)        
         self.loginBtn = ttk.Button(self.window, text="Login",state=DISABLED,command=self.doLogin)
@@ -379,35 +379,38 @@ class GUIClient():
         self.storBtn = ttk.Button(self.window, text = 'STOR',state=DISABLED, command=self.doSTOR)
 
 
-        self.FileList=Text(self.window,height=20,width=50,background='gray42',fg='orange')
-        self.Log=Text(self.window,height=20,width=50,background='gray42',fg='orange')
+        self.FileList=Text(self.window,height=20,width=70,background='gray42',fg='orange')
+        self.Log=Text(self.window,height=20,width=40,background='gray42',fg='orange')
+        self.FileList.insert(END,'File/Dir          usr grp size \t Last modified \t filename \n')
 
 
-        self.loginBtn.grid(column=1, row=0)
-        self.connectBtn.grid(column=2, row=0)
-        self.quitBtn.grid(column=1, row=1)
 
-        self.pasvbBtn.grid(column=1, row=2)
-        self.portBtn.grid(column=2, row=2)
+        self.loginBtn.grid(column=1, row=1,pady=2,padx=10)
+        self.connectBtn.grid(column=2, row=1,pady=2,padx=10)
+        self.quitBtn.grid(column=1, row=2,pady=2,padx=10)
 
-
-        self.typeBtn.grid(column=1, row=8)
-        self.modeBtn.grid(column=1, row=9)
-        self.struBtn.grid(column=1, row=10)
+        self.pasvbBtn.grid(column=1, row=3,pady=2,padx=10)
+        self.portBtn.grid(column=2, row=3,pady=2,padx=10)
 
 
-        self.pwdBtn.grid(column=1, row=11)
-        self.cwdBtn.grid(column=1, row=12)
-        self.mkdBtn.grid(column=1, row=13)
+        self.typeBtn.grid(column=1, row=4,pady=2,padx=10)
+        self.modeBtn.grid(column=2, row=4,pady=2,padx=10)
+        self.struBtn.grid(column=1, row=5,pady=2,padx=10)
 
 
-        self.listBtn.grid(column=1, row =5)
-        self.retrBtn.grid(column=2,row=4)
-        self.storBtn.grid(column=2,row=5)
+        self.pwdBtn.grid(column=1, row=9,pady=2,padx=10)
+        self.cwdBtn.grid(column=2, row=9,pady=2,padx=10)
+        self.mkdBtn.grid(column=1, row=10,pady=2,padx=10)
 
 
-        self.FileList.grid(column=9,row=3)
-        self.Log.grid(column=7,row=3)
+        self.listBtn.grid(column=1, row=6,pady=2,padx=10)
+        self.retrBtn.grid(column=2, row=6,pady=2,padx=10)
+        self.storBtn.grid(column=1, row=7,pady=2,padx=10)
+
+
+        self.FileList.grid(column=15,row=0,padx=10)
+        self.Log.grid(column=7,row=0,padx=15)
+
 
 
         self.window.mainloop()
@@ -496,7 +499,7 @@ class GUIClient():
         port=self.doPopUp('Enter Port')
         try:
             if(self.FTPClient.PORT(ip,int(port)) ==0):
-                self.Log.insert(END,'Listen socket created at'+ip+':'+port+'\n')
+                self.Log.insert(END,'Listen socket created at '+ip+':'+port+'\n')
                 self.enableDataButtons()
             else:
                 self.Log.insert(END,'Failed, invalid input...\n')
@@ -534,7 +537,7 @@ class GUIClient():
         print(filename)
         try:
             if( self.FTPClient.STOR(filename)==0):
-                self.Log.insert(END, 'File: '+ filename+'uploaded \n')
+                self.Log.insert(END, 'File: '+ filename+' uploaded \n')
             else:
                 self.Log.insert(END, 'Could not upload \n')
             
@@ -551,7 +554,7 @@ class GUIClient():
         try:
             res=self.FTPClient.RETR(filename)
             if(res==0):
-                self.Log.insert(END,filename+'download complete\n')
+                self.Log.insert(END,filename+' download complete\n')
             else:
                 self.Log.insert(END,'Could not download...\n')
         except:

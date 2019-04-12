@@ -390,7 +390,7 @@ class myThread (threading.Thread):
                 'def',
                 str(fileInfo.st_size),
                 '\t',
-             #   datetime.utcfromtimestamp(fileInfo.st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
+                datetime.utcfromtimestamp(fileInfo.st_mtime).strftime('%b \t %d \t %H:%M'),
                 '\t',
                 str(file),
                 '\r\n'
