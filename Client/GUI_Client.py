@@ -32,24 +32,8 @@ class FTPClient():
         print('S %s' % serverResp)
 
         return
-    def CheckExtension(self,file):
-        name,ext=os.path.splitext(file)
-        print(ext)
-        if(ext not in self.textExtensions):
-            self.type='b'
-        else:
-            self.type=''
-        print(self.type)
-    def loadExtensions(self):
-        with open('extensions.txt') as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=',')
-            self.textExtensions=['.txt']
-            for row in csv_reader:
-                for ext in row:
-                    self.textExtensions.append(ext)
-        print(self.textExtensions)
+
     def login(self,userName,password):
-        self.loadExtensions()
         loginMessage='USER '+userName+'\r\n'
         print('C %s' % loginMessage)
         self.conSoc.sendall(loginMessage.encode('ascii'))
@@ -139,7 +123,6 @@ class FTPClient():
         if(serverResp.startswith('5') == True):
             return 1
         
-        self.CheckExtension(filename)
 
         if(self.dataSoc!=None):##Assume active
             self.dataSoc.listen()
@@ -181,7 +164,6 @@ class FTPClient():
             return 1
         
         head, filenameOnServer = os.path.split(filename)
-        self.CheckExtension(filenameOnServer)
 
         message='STOR '+filenameOnServer+'\r\n'
         print('C %s'%message)
@@ -366,7 +348,7 @@ class GUIClient():
         ##some state vars
         self.connected=False
         self.loggedIn=False
-
+        self.textExtensions=None
         self.FTPClient=client
         self.window = ThemedTk(theme="equilux",background='gray40')
         self.window.title("FTP Client") 
@@ -440,7 +422,21 @@ class GUIClient():
         self.window.wait_window(popup1.top)
         return popup1.value
 
-
+    def CheckExtension(self,file):
+        name,ext=os.path.splitext(file)
+        print(ext)
+        if(ext not in self.textExtensions):
+            self.FTPClient.TYPE("I")
+        else:
+            self.FTPClient.TYPE("A")
+    def loadExtensions(self):
+        with open('extensions.txt') as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            self.textExtensions=['.txt']
+            for row in csv_reader:
+                for ext in row:
+                    self.textExtensions.append(ext)
+        print(self.textExtensions)
     def doConnect(self):
         
         serverIP=self.doPopUp('Enter IP','127.0.0.1')
@@ -458,6 +454,7 @@ class GUIClient():
         return
 
     def doLogin(self):
+        self.loadExtensions()
         username=self.doPopUp('Enter username','ADMIN')
 
         password=self.doPopUp('Enter password','ADMIN')
@@ -555,6 +552,8 @@ class GUIClient():
     def doSTOR(self):
         filename =  filedialog.askopenfilename(initialdir = "/",title = "Select file",filetypes = [("all files","*.*")])
         print(filename)
+        self.CheckExtension(filename)
+
         try:
             if( self.FTPClient.STOR(filename)==0):
                 self.Log.insert(END, 'File: '+ filename+' uploaded \n')
@@ -571,6 +570,7 @@ class GUIClient():
 
     def doRETR(self):
         filename=self.doPopUp('Filename?')
+        self.CheckExtension(filename)
         try:
             res=self.FTPClient.RETR(filename)
             if(res==0):
