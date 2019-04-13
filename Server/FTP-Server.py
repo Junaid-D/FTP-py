@@ -47,7 +47,7 @@ class myThread (threading.Thread):
         self.conSoc.sendall(greeting.encode('ascii'))
 
         self.ReadCredentials()
-        self.ReadExtensions()
+        #self.ReadExtensions()
         while(self.open==True):
             if(self.authorized==False):#greeting
                 self.USER()
@@ -220,7 +220,7 @@ class myThread (threading.Thread):
         self.conSoc.sendall(response.encode('ascii'))
 
     def STOR(self,filename):
-        self.CheckExtension(filename)
+        #self.CheckExtension(filename)
         ###active
         if(self.activeIP is not None):
             try:
@@ -289,7 +289,7 @@ class myThread (threading.Thread):
         return
     
     def RETR(self,filename):
-        self.CheckExtension(filename)
+        #self.CheckExtension(filename)
 
         filename=self.currentPath+'\\'+filename
 
