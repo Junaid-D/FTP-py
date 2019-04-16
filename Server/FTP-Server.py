@@ -7,7 +7,7 @@ from datetime import datetime
 import random
 
 host = '127.0.0.1'
-port = 4500
+port = 21
 
 class myThread (threading.Thread):
     def __init__(self, threadID,conSoc,dest):
@@ -16,7 +16,7 @@ class myThread (threading.Thread):
         self.conSoc=conSoc
         self.dest=dest
         self.user=''
-        self.portRange=2048
+        self.portRange=[50000,60000]
         self.password=''
         self.open=True
         self.authorized=False
@@ -102,6 +102,7 @@ class myThread (threading.Thread):
     def parseCommand(self,recCommand):
         splitStr=recCommand[:-2]
         splitStr=splitStr.split(' ',3)
+        splitStr[0]=splitStr[0].upper()
         if len(splitStr) == 1:
             return [splitStr[0],'']
         return splitStr
@@ -188,19 +189,19 @@ class myThread (threading.Thread):
     def PASV(self):
         print('Initiating passive data port')
         self.passiveIP=host
-        self.passivePort=random.randint(1024,self.portRange)
+        self.passivePort=random.randint(self.portRange[0],self.portRange[1])
         splitIP=host.split('.')
         port1=int(self.passivePort)//256
         port2=int(self.passivePort)%256
         #ip
-        sequence=splitIP[0]+','+splitIP[1]+','+splitIP[2]+','+splitIP[3]    
+        sequence=','.join(splitIP)  
         #port
         sequence=sequence+','+str(port1)+','+str(port2)
-        
+        print(sequence)
         self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.dataSoc.bind((self.passiveIP,self.passivePort))
-        message='227  Entering Passive Mode '+sequence+'\r\n'
-
+        message='227 Entering Passive Mode '+ sequence+'\r\n'
+            
         self.conSoc.sendall(message.encode('ascii'))
 
     def NOOP(self):

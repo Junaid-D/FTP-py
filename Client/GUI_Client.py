@@ -102,7 +102,7 @@ class FTPClient():
             splitResp=serverResp[:-2]
             print(splitResp)
             splitResp=splitResp.split()
-            splitIP=splitResp[4]
+            splitIP=splitResp[-1]
             splitIP=splitIP.split(",")
             self.passiveIP='.'.join(splitIP[:4])
             self.passivePort=int(splitIP[4])*256+int(splitIP[5])
