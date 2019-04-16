@@ -1,0 +1,1 @@
+.txt,.html,.asp,.php,.c,.cpp

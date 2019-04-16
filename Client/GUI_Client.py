@@ -16,7 +16,7 @@ class FTPClient():
         self.dataSoc=None
         self.passiveIP=None
         self.passivePort=None
-        self.type='b'
+        self.type=''
         self.list=''
         self.mode="S"
         self.stru='F'

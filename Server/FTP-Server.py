@@ -26,7 +26,7 @@ class myThread (threading.Thread):
         self.passiveIP=None
         self.passivePort=None
         self.structure='File'
-        self.type='b'
+        self.type=''
         self.credentials=None
         self.textExtensions=None
         self.currentPath=os.getcwd()
@@ -47,7 +47,7 @@ class myThread (threading.Thread):
         self.conSoc.sendall(greeting.encode('ascii'))
 
         self.ReadCredentials()
-        #self.ReadExtensions()
+        self.ReadExtensions()
         while(self.open==True):
             if(self.authorized==False):#greeting
                 self.USER()
@@ -113,6 +113,7 @@ class myThread (threading.Thread):
             for row in csv_reader:
                 self.credentials.append((row[0],row[1]))
         print(self.credentials)
+
     def ReadExtensions(self):
         with open('extensions.txt') as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
@@ -120,14 +121,15 @@ class myThread (threading.Thread):
             for extList in csv_reader:
                 for ext in extList:
                     self.textExtensions.append(ext)
-        print(self.textExtensions)
+
     def CheckExtension(self,file):
+
+        if(self.type=='b'):##binary should be compatible with all
+            return True
+
         name,ext=os.path.splitext(file)
-        print(ext)
-        if(ext not in self.textExtensions):
-            self.type='b'
-        else:
-            self.type=''
+        return (ext in self.textExtensions)
+
     def SendExtension(self,soc):
         for ext in self.textExtensions:
             toSend=ext
@@ -220,7 +222,11 @@ class myThread (threading.Thread):
         self.conSoc.sendall(response.encode('ascii'))
 
     def STOR(self,filename):
-        #self.CheckExtension(filename)
+        if(self.CheckExtension(filename)==False):
+            encodingError='550 Incompatible type encoding.\r\n'
+            self.conSoc.sendall(encodingError.encode('ascii'))
+            return
+
         ###active
         if(self.activeIP is not None):
             try:
@@ -289,7 +295,11 @@ class myThread (threading.Thread):
         return
     
     def RETR(self,filename):
-        #self.CheckExtension(filename)
+
+        if(self.CheckExtension(filename)==False):
+            encodingError='550 Incompatible type encoding.\r\n'
+            self.conSoc.sendall(encodingError.encode('ascii'))
+            return
 
         filename=self.currentPath+'\\'+filename
 
