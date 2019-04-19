@@ -244,7 +244,7 @@ class myThread (threading.Thread):
             try:
                 newFile=open('new_onserver_'+filename,"w"+self.type)
             except:
-                errorMsg='426 Connection closed; transfer aborted.\r\n'
+                errorMsg='426 Connection closed (file error); transfer aborted.\r\n'
                 self.conSoc.send(errorMsg.encode('ascii'))  
                 self.CloseDataSoc()
                 self.activeIP=None
@@ -269,11 +269,6 @@ class myThread (threading.Thread):
             self.activeIP=None
             self.activePort=None
             return
-
-        if(self.dataSoc is None):
-             ## USE DEFAULT FTP 20 PORT (passive) ,reuses passive code below
-            self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            self.dataSoc.bind((host,20))
 
 
         ###PASSIVE
@@ -369,11 +364,6 @@ class myThread (threading.Thread):
             self.activeIP=None
             self.activePort=None
 
-
-        if(self.dataSoc is None):
-             ## USE DEFAULT FTP 20 PORT (passive) ,reuses passive code below
-            self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            self.dataSoc.bind((host,20))
 
        ###passive
         if (self.dataSoc is not None):
@@ -495,11 +485,6 @@ class myThread (threading.Thread):
             self.activeIP=None
             self.activePort=None
             return
-
-        if(self.dataSoc is None):
-            ## USE DEFAULT FTP 20 PORT (passive) ,reuses passive code below
-            self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            self.dataSoc.bind((host,20))
 
         ##passive
         if (self.dataSoc is not None):

@@ -123,7 +123,7 @@ class FTPClient():
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
 
-        if(serverResp.startswith('5') == True):
+        if(serverResp.startswith('2') == False):
             return 1
         
 
@@ -143,10 +143,6 @@ class FTPClient():
             self.CloseDataSocket()
             return 0
 
-
-        if(self.passiveIP is None):##USE DEFAULT PORT
-            self.passiveIP=self.serverIP
-            self.passivePort=20
 
         
         if(self.passiveIP!=None):##Assume Passive
@@ -168,8 +164,6 @@ class FTPClient():
             self.dataSoc=None
             return 0
 
-        print('No data connection was set up')
-        return 1
     def STOR(self,filename):
     
         
@@ -180,6 +174,10 @@ class FTPClient():
         self.conSoc.sendall(message.encode('ascii'))
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
+
+        if(serverResp.startswith('2') == False):
+            return 1
+
 
         if(self.dataSoc!=None):##Assume active
 
@@ -196,15 +194,9 @@ class FTPClient():
             
             s1.shutdown(socket.SHUT_RDWR)
             s1.close()
-
-
             self.CloseDataSocket()
             return 0
 
-
-        if(self.passiveIP is None):##USE DEFAULT PORT
-            self.passiveIP=self.serverIP
-            self.passivePort=20
 
         if(self.passiveIP!=None):##Assume Passive
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -277,55 +269,53 @@ class FTPClient():
 
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
-        if(serverResp.startswith('2')):
-            list=''
 
-            if(self.dataSoc!=None):##Assume active
-
-                self.dataSoc.listen()
-                s1,addr=self.dataSoc.accept()
-
-                while 1:
-                    data=s1.recv(1024)
-                    if not data:
-                        break
-                    list+=data.decode()
-
-                s1.shutdown(socket.SHUT_RDWR)
-                s1.close()
-
-                print (list)
-                self.CloseDataSocket()
-                self.list=list
-
-            if(self.passiveIP is None):##USE DEFAULT PORT
-                self.passiveIP=self.serverIP
-                self.passivePort=20
+        if(serverResp.startswith('2') == False):
+            return 1
 
 
-            if(self.passiveIP!=None):##Assume Passive
-                self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-                self.dataSoc.connect((self.passiveIP,self.passivePort))
-                
-                while 1:
-                    data=self.dataSoc.recv(1024)
-                    if not data:
-                        break
-                    list+=data.decode()
-                
-                self.passiveIP=None
-                self.passivePort=None
+        list=''
 
-                self.dataSoc.close()
-                self.dataSoc=None
-                print (list)
+        if(self.dataSoc!=None):##Assume active
 
-                self.list=list
+            self.dataSoc.listen()
+            s1,addr=self.dataSoc.accept()
 
+            while 1:
+                data=s1.recv(1024)
+                if not data:
+                    break
+                list+=data.decode()
+
+            s1.shutdown(socket.SHUT_RDWR)
+            s1.close()
+
+            print (list)
+            self.CloseDataSocket()
+            self.list=list
             return 0
 
-        else:
-            return 1
+
+        if(self.passiveIP!=None):##Assume Passive
+            self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            self.dataSoc.connect((self.passiveIP,self.passivePort))
+            
+            while 1:
+                data=self.dataSoc.recv(1024)
+                if not data:
+                    break
+                list+=data.decode()
+            
+            self.passiveIP=None
+            self.passivePort=None
+
+            self.dataSoc.close()
+            self.dataSoc=None
+            print (list)
+
+            self.list=list
+
+            return 0
        
 
     def PWD(self):
@@ -498,7 +488,6 @@ class GUIClient():
                 self.loginBtn['state']='disabled'
                 self.quitBtn['state']='normal'
                 self.enableNonDataButtons()
-                self.enableDataButtons()
             else:
                 self.disableNonDataButtons()
                 self.Log.insert(END,'Invalid login\n')
@@ -554,6 +543,8 @@ class GUIClient():
                 self.Log.insert(END,'Failed, invalid input...\n')
         except:
             self.Log.insert(END,'Failed, invalid input...\n')
+            self.disableDataButtons()
+
 
 
         return
@@ -568,7 +559,7 @@ class GUIClient():
     def doLIST(self):
         dir=self.doPopUp('Enter dir (leave blank for current dir)','')
         try:
-            if( self.FTPClient.LIST(dir)==0):
+            if(self.FTPClient.LIST(dir)==0):
               self.FileList.insert(END,self.FTPClient.list)
               self.Log.insert(END,'list obtained \n')
             else:
@@ -576,6 +567,10 @@ class GUIClient():
 
         except:
             self.Log.insert(END,'Could not obtain list \n')
+
+        finally:
+            self.disableDataButtons()
+
 
 
         return
@@ -593,6 +588,8 @@ class GUIClient():
             
         except:
             self.Log.insert(END, 'Could not upload \n')
+        finally:
+            self.disableDataButtons()
 
 
         return
@@ -608,6 +605,9 @@ class GUIClient():
                 self.Log.insert(END,'Could not download...\n')
         except:
             self.Log.insert(END,'Could not download...\n')
+
+        finally:
+            self.disableDataButtons()
 
 
         return
