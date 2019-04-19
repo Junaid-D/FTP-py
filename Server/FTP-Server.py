@@ -209,11 +209,18 @@ class myThread (threading.Thread):
         self.conSoc.sendall(response.encode('ascii'))
 
     def TYPE(self,newType):
+        newType=newType.upper()
         types=['A','I']
         if(newType not in types):
-            response='501 Invalid Type\r\n'
-            self.conSoc.sendall(response.encode('ascii'))
-            return
+            permitted=['A','I','E','L']
+            if(newType in permitted):
+                response='504 Command not implemented for that parameter\r\n'
+                self.conSoc.sendall(response.encode('ascii'))
+                return
+            else:
+                response='501 Invalid type given.r\r\n'
+                self.conSoc.sendall(response.encode('ascii'))
+                return 
         if(newType=='A'):
             self.type=''
         else:
@@ -395,7 +402,7 @@ class myThread (threading.Thread):
         self.conSoc.sendall(response.encode('ascii'))   
 
     def FEAT(self):
-        response='211 RETR PORT\r\n'
+        response='211 RETR PORT SYST PWD\r\n'
         self.conSoc.sendall(response.encode('ascii'))     
          
     def PWD(self):
@@ -495,21 +502,35 @@ class myThread (threading.Thread):
 
 
     def MODE(self,newMode):
+        newMode=newMode.upper()
         modes=['S']
         if(newMode not in modes):
-            response='504 Command not implemented for that parameter\r\n'
-            self.conSoc.sendall(response.encode('ascii'))
-            return
+            permitted=['S','B','C']
+            if(newMode in permitted):
+                response='504 Command not implemented for that parameter\r\n'
+                self.conSoc.sendall(response.encode('ascii'))
+                return
+            else:
+                response='501 Invalid mode given.r\r\n'
+                self.conSoc.sendall(response.encode('ascii'))
+                return 
         response = '200 Mode Altered\r\n'
         self.conSoc.sendall(response.encode('ascii'))
 
 
     def STRU(self,newStru):
+        newStru=newStru.upper()
         strus=['F']
         if(newStru not in strus):
-            response='504 Command not implemented for that parameter\r\n'
-            self.conSoc.sendall(response.encode('ascii'))
-            return
+            permitted=['F','R','P']
+            if(newStru in permitted):
+                response='504 Command not implemented for that parameter\r\n'
+                self.conSoc.sendall(response.encode('ascii'))
+                return
+            else:
+                response='501 Invalid structure given.r\r\n'
+                self.conSoc.sendall(response.encode('ascii'))
+                return 
         response = '200 Structure Altered\r\n'
         self.conSoc.sendall(response.encode('ascii'))
 
