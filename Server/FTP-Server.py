@@ -230,6 +230,10 @@ class myThread (threading.Thread):
         self.conSoc.sendall(response.encode('ascii'))
 
     def STOR(self,filename):
+        if(filename==''):
+            fileErr='501 No filename given\r\n'
+            self.conSoc.sendall(fileErr.encode('ascii'))
+            return
         if(self.CheckExtension(filename)==False):
             encodingError='550 Incompatible type encoding.\r\n'
             self.conSoc.sendall(encodingError.encode('ascii'))
@@ -266,6 +270,12 @@ class myThread (threading.Thread):
             self.activePort=None
             return
 
+        if(self.dataSoc is None):
+             ## USE DEFAULT FTP 20 PORT (passive) ,reuses passive code below
+            self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            self.dataSoc.bind((host,20))
+
+
         ###PASSIVE
         if (self.dataSoc is not None):
             try:
@@ -298,11 +308,18 @@ class myThread (threading.Thread):
             self.passivePort=None
             return
 
-        noDataCon='425 Create Data connection first\r\n'
+        ##nothing
+        noDataCon='425 Data connection was never created\r\n'
         self.conSoc.sendall(noDataCon.encode('ascii'))
-        return
+
+
+
     
     def RETR(self,filename):
+        if(filename==''):
+            fileErr='501 No filename given\r\n'
+            self.conSoc.sendall(fileErr.encode('ascii'))
+            return
 
         if(self.CheckExtension(filename)==False):
             encodingError='550 Incompatible type encoding.\r\n'
@@ -317,7 +334,7 @@ class myThread (threading.Thread):
             return
 
         if(os.path.isfile(filename)!=True):
-            fileNotFound='550 is not a file.\r\n'
+            fileNotFound='550 is not a directory, not a file.\r\n'
             self.conSoc.sendall(fileNotFound.encode('ascii'))
             return
             ####early exits
@@ -351,6 +368,12 @@ class myThread (threading.Thread):
             self.CloseDataSoc()
             self.activeIP=None
             self.activePort=None
+
+
+        if(self.dataSoc is None):
+             ## USE DEFAULT FTP 20 PORT (passive) ,reuses passive code below
+            self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            self.dataSoc.bind((host,20))
 
        ###passive
         if (self.dataSoc is not None):
@@ -387,7 +410,7 @@ class myThread (threading.Thread):
             return
 
         ##nothing
-        noDataCon='425 Create Data connection first\r\n'
+        noDataCon='425 Data connection was never created\r\n'
         self.conSoc.sendall(noDataCon.encode('ascii'))
         
 
@@ -416,70 +439,90 @@ class myThread (threading.Thread):
         if(args==''):
             files=os.listdir(self.currentPath)
             print(files)
-            
-            toSend=''
-            for file in files:
-                fullpath=self.currentPath+'\\'+ file
-                fileInfo=os.stat(fullpath)
-                #bin/ls format
-                prefix=''
-                if(os.path.isdir(fullpath)):
-                    prefix='drwxr-xr-x 1'
-                else:
-                   prefix= '-rw-r--r-- 1'
-                line = [
-                prefix,
-                'def',
-                'def',
-                str(fileInfo.st_size),
-                '\t',
-                datetime.utcfromtimestamp(fileInfo.st_mtime).strftime('%b \t %d \t %H:%M'),
-                '\t',
-                str(file),
-                '\r\n'
-                ]
-                
-                lineStr=' '.join(line)
-                print(lineStr)
-                toSend+=lineStr
-
-            ##active
-            if(self.activeIP is not None):
-                print('List sent')
-                transferAccept='226 Accepted\r\n'
-                self.conSoc.sendall(transferAccept.encode('ascii'))
-
-                self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-                self.dataSoc.connect((self.activeIP,self.activePort))
-
-                self.dataSoc.sendall(toSend.encode('ascii'))
-                  
-                self.CloseDataSoc()
-                self.activeIP=None
-                self.activePort=None
+        else:
+            if(os.path.exists(args)):
+                files=os.listdir(args)
+                print(files)
+            else:
+                response='501 The directory does not exist \r\n'
+                self.conSoc.sendall(response.encode('ascii'))
                 return
-            ##passive
-            if (self.dataSoc is not None):
-                transferAccept='250 Accepted\r\n'
-                self.conSoc.sendall(transferAccept.encode('ascii'))
-
         
-                self.dataSoc.listen()
-                s1,addr=self.dataSoc.accept()
-                s1.sendall(toSend.encode('ascii'))
-
-
-                s1.shutdown(socket.SHUT_RDWR)
-                s1.close()
-                self.dataSoc.close()
-                self.dataSoc=None
-                self.passiveIP=None
-                self.passivePort=None
-                return
+        print('here')
             
-            ##nothing
-            noDataCon='425 Create Data connection first\r\n'
-            self.conSoc.sendall(noDataCon.encode('ascii'))
+        toSend=''
+        for file in files:
+
+            if(args==''):
+                fullpath=self.currentPath+'\\'+ file
+            else:
+                fullpath=args+'\\'+file
+            fileInfo=os.stat(fullpath)
+            #bin/ls format
+            prefix=''
+            if(os.path.isdir(fullpath)):
+                prefix='drwxr-xr-x 1'
+            else:
+                prefix= '-rw-r--r-- 1'
+            line = [
+            prefix,
+            'def',
+            'def',
+            str(fileInfo.st_size),
+            '\t',
+            datetime.utcfromtimestamp(fileInfo.st_mtime).strftime('%b \t %d \t %H:%M'),
+            '\t',
+            str(file),
+            '\r\n'
+            ]
+            
+            lineStr=' '.join(line)
+            print(lineStr)
+            toSend+=lineStr
+
+        ##active
+        if(self.activeIP is not None):
+            print('List sent')
+            transferAccept='226 Accepted\r\n'
+            self.conSoc.sendall(transferAccept.encode('ascii'))
+
+            self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            self.dataSoc.connect((self.activeIP,self.activePort))
+
+            self.dataSoc.sendall(toSend.encode('ascii'))
+                
+            self.CloseDataSoc()
+            self.activeIP=None
+            self.activePort=None
+            return
+
+        if(self.dataSoc is None):
+            ## USE DEFAULT FTP 20 PORT (passive) ,reuses passive code below
+            self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            self.dataSoc.bind((host,20))
+
+        ##passive
+        if (self.dataSoc is not None):
+            transferAccept='250 Accepted\r\n'
+            self.conSoc.sendall(transferAccept.encode('ascii'))
+
+    
+            self.dataSoc.listen()
+            s1,addr=self.dataSoc.accept()
+            s1.sendall(toSend.encode('ascii'))
+
+
+            s1.shutdown(socket.SHUT_RDWR)
+            s1.close()
+            self.dataSoc.close()
+            self.dataSoc=None
+            self.passiveIP=None
+            self.passivePort=None
+            return
+        
+        ##nothing
+        noDataCon='425 No data connection created\r\n'
+        self.conSoc.sendall(noDataCon.encode('ascii'))
 
 
         

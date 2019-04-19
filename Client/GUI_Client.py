@@ -21,6 +21,7 @@ class FTPClient():
         self.mode="S"
         self.stru='F'
         self.textExtensions=None
+        self.serverIP=None
     def Connect(self,serverip,port):
         self.conSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         
@@ -29,6 +30,7 @@ class FTPClient():
         while(serverResp==''):
             serverResp=self.conSoc.recv(1024).decode('ascii')
 
+        self.serverIP=serverip
         print('S %s' % serverResp)
 
         return
@@ -92,6 +94,8 @@ class FTPClient():
             print('Error with parameters, retuning to menu..')
             return 1
         return 0
+
+
     def PASV(self):
         message='PASV\r\n'
         print('C %s'%message)
@@ -109,10 +113,9 @@ class FTPClient():
         elif(serverResp.startswith('5')):
             print('Error with parameters, retuning to menu..')
         return  
+
+
     def RETR(self,filename):#stream--server will close connection, block-- eof block will be sent
-        if(self.passiveIP==None and self.dataSoc==None):
-            print('No data connection was set up')
-            return 2
         
         message='RETR '+filename+'\r\n'
         print('C %s'%message)
@@ -140,6 +143,12 @@ class FTPClient():
             self.CloseDataSocket()
             return 0
 
+
+        if(self.passiveIP is None):##USE DEFAULT PORT
+            self.passiveIP=self.serverIP
+            self.passivePort=20
+
+        
         if(self.passiveIP!=None):##Assume Passive
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.dataSoc.connect((self.passiveIP,self.passivePort))
@@ -153,15 +162,16 @@ class FTPClient():
             newFile.close()        
             print('Transfer complete')
             
-
+            self.passiveIP=None
+            self.passivePort=None
             self.dataSoc.close()
             self.dataSoc=None
             return 0
 
+        print('No data connection was set up')
+        return 1
     def STOR(self,filename):
-        if(self.passiveIP==None and self.dataSoc==None):
-            print('No data connection was set up')
-            return 1
+    
         
         head, filenameOnServer = os.path.split(filename)
 
@@ -191,6 +201,11 @@ class FTPClient():
             self.CloseDataSocket()
             return 0
 
+
+        if(self.passiveIP is None):##USE DEFAULT PORT
+            self.passiveIP=self.serverIP
+            self.passivePort=20
+
         if(self.passiveIP!=None):##Assume Passive
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.dataSoc.connect((self.passiveIP,self.passivePort))
@@ -200,10 +215,15 @@ class FTPClient():
                     if (self.type==''): toSend=toSend.encode('ascii')
                     self.dataSoc.send(toSend)
                     toSend=f.read(1024)
+
+            self.passiveIP=None
+            self.passivePort=None
             self.dataSoc.close()
             self.dataSoc=None
             return 0
 
+        print('No data connection was set up')
+        return 1
         
  
     def TYPE(self,type):
@@ -249,8 +269,9 @@ class FTPClient():
             return 1
         return
 
-    def LIST(self):
-        message = 'LIST \r\n'
+    def LIST(self,args):
+        print(args)
+        message = 'LIST '+args+'\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
 
@@ -277,6 +298,11 @@ class FTPClient():
                 self.CloseDataSocket()
                 self.list=list
 
+            if(self.passiveIP is None):##USE DEFAULT PORT
+                self.passiveIP=self.serverIP
+                self.passivePort=20
+
+
             if(self.passiveIP!=None):##Assume Passive
                 self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
                 self.dataSoc.connect((self.passiveIP,self.passivePort))
@@ -286,16 +312,21 @@ class FTPClient():
                     if not data:
                         break
                     list+=data.decode()
+                
+                self.passiveIP=None
+                self.passivePort=None
 
                 self.dataSoc.close()
                 self.dataSoc=None
                 print (list)
 
                 self.list=list
-        else:
 
-            print("No data soc")
-            return
+            return 0
+
+        else:
+            return 1
+       
 
     def PWD(self):
         message='PWD\r\n'
@@ -467,6 +498,7 @@ class GUIClient():
                 self.loginBtn['state']='disabled'
                 self.quitBtn['state']='normal'
                 self.enableNonDataButtons()
+                self.enableDataButtons()
             else:
                 self.disableNonDataButtons()
                 self.Log.insert(END,'Invalid login\n')
@@ -520,10 +552,8 @@ class GUIClient():
                 self.enableDataButtons()
             else:
                 self.Log.insert(END,'Failed, invalid input...\n')
-                self.disableDataButtons()
         except:
             self.Log.insert(END,'Failed, invalid input...\n')
-            self.disableDataButtons()
 
 
         return
@@ -536,16 +566,17 @@ class GUIClient():
         return
 
     def doLIST(self):
-        self.FTPClient.LIST()
+        dir=self.doPopUp('Enter dir (leave blank for current dir)','')
         try:
-            self.FileList.insert(END,self.FTPClient.list)
-            self.Log.insert(END,'list obtained \n')
+            if( self.FTPClient.LIST(dir)==0):
+              self.FileList.insert(END,self.FTPClient.list)
+              self.Log.insert(END,'list obtained \n')
+            else:
+                self.Log.insert(END,'directory does not exist \n')
 
         except:
             self.Log.insert(END,'Could not obtain list \n')
 
-        finally:
-            self.disableDataButtons()
 
         return
 
@@ -563,8 +594,6 @@ class GUIClient():
         except:
             self.Log.insert(END, 'Could not upload \n')
 
-        finally:
-            self.disableDataButtons()
 
         return
 
@@ -579,8 +608,8 @@ class GUIClient():
                 self.Log.insert(END,'Could not download...\n')
         except:
             self.Log.insert(END,'Could not download...\n')
-        finally:
-            self.disableDataButtons()
+
+
         return
 
     def doPWD(self):
