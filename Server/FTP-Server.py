@@ -6,7 +6,7 @@ import csv
 from datetime import datetime
 import random
 
-host = '127.0.0.1'
+host = '192.168.101.130'
 port = 21
 
 class myThread (threading.Thread):
@@ -218,7 +218,7 @@ class myThread (threading.Thread):
                 self.conSoc.sendall(response.encode('ascii'))
                 return
             else:
-                response='501 Invalid type given.r\r\n'
+                response='501 Invalid type given\r\n'
                 self.conSoc.sendall(response.encode('ascii'))
                 return 
         if(newType=='A'):
@@ -539,7 +539,7 @@ class myThread (threading.Thread):
                 self.conSoc.sendall(response.encode('ascii'))
                 return
             else:
-                response='501 Invalid mode given.r\r\n'
+                response='501 Invalid mode given\r\n'
                 self.conSoc.sendall(response.encode('ascii'))
                 return 
         response = '200 Mode Altered\r\n'
@@ -556,7 +556,7 @@ class myThread (threading.Thread):
                 self.conSoc.sendall(response.encode('ascii'))
                 return
             else:
-                response='501 Invalid structure given.r\r\n'
+                response='501 Invalid structure given\r\n'
                 self.conSoc.sendall(response.encode('ascii'))
                 return 
         response = '200 Structure Altered\r\n'
