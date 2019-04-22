@@ -52,7 +52,7 @@ class FTPClient():
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s' % serverResp)
 
-        if(serverResp.startswith('200')):
+        if(serverResp.startswith('2')):
             self.loggedIn=True
             print("Login success!")
         
@@ -107,6 +107,7 @@ class FTPClient():
             print(splitResp)
             splitResp=splitResp.split()
             splitIP=splitResp[-1]
+            splitIP=splitIP.strip('().')
             splitIP=splitIP.split(",")
             self.passiveIP='.'.join(splitIP[:4])
             self.passivePort=int(splitIP[4])*256+int(splitIP[5])

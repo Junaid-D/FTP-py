@@ -6,8 +6,8 @@ import csv
 from datetime import datetime
 import random
 
-host = '192.168.101.130'
-port = 21
+host = '127.0.0.1'
+port = 4500
 
 class myThread (threading.Thread):
     def __init__(self, threadID,conSoc,dest):
