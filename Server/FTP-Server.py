@@ -30,6 +30,7 @@ class myThread (threading.Thread):
         self.credentials=None
         self.textExtensions=None
         self.currentPath=os.getcwd()
+        self.corePath=self.currentPath
         self.transferMode='S'
     def run(self):
         self.runServer()
@@ -162,6 +163,9 @@ class myThread (threading.Thread):
         if(self.authorized):
             response='200 Success\r\n'
             self.conSoc.sendall(response.encode('ascii'))
+            if(self.user!='ADMIN'):
+                self.currentPath+='\\' +self.user
+                self.corePath=self.currentPath
         else:
             response='430 Invalid login\r\n'
             self.conSoc.sendall(response.encode('ascii'))
@@ -239,10 +243,11 @@ class myThread (threading.Thread):
             self.conSoc.sendall(encodingError.encode('ascii'))
             return
 
+
         ###active
         if(self.activeIP is not None):
             try:
-                newFile=open('new_onserver_'+filename,"w"+self.type)
+                newFile=open(self.currentPath+'\\'+'new_onserver_'+filename,"w"+self.type)
             except:
                 errorMsg='426 Connection closed (file error); transfer aborted.\r\n'
                 self.conSoc.send(errorMsg.encode('ascii'))  
@@ -257,7 +262,7 @@ class myThread (threading.Thread):
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.dataSoc.connect((self.activeIP,self.activePort))
             
-            newFile=open('new_onserver_'+filename,"w"+self.type)
+            newFile=open(self.currentPath+'\\'+'new_onserver_'+filename,"w"+self.type)
             if(self.transferMode=='S'):
                 while 1:
                     data=self.dataSoc.recv(1024)
@@ -274,7 +279,7 @@ class myThread (threading.Thread):
         ###PASSIVE
         if (self.dataSoc is not None):
             try:
-                newFile=open('new_onserver_'+filename,"w"+self.type)
+                newFile=open(self.currentPath+'\\'+'new_onserver_'+filename,"w"+self.type)
             except:
                 errorMsg='426 Connection closed; transfer aborted.\r\n'
                 self.conSoc.send(errorMsg.encode('ascii'))  
@@ -289,7 +294,7 @@ class myThread (threading.Thread):
             self.dataSoc.listen()
             s1,addr=self.dataSoc.accept()
 
-            newFile=open('new_onserver_'+filename,"w"+self.type)
+            newFile=open(self.currentPath+'\\'+'new_onserver_'+filename,"w"+self.type)
             if(self.transferMode=='S'):
                 while 1:
                     data=s1.recv(1024)
@@ -433,7 +438,11 @@ class myThread (threading.Thread):
             if(os.path.exists(args)):
                 files=os.listdir(args)
                 print(files)
-            else:
+                if(self.corePath not in args and self.user!='ADMIN' ):
+                    response='530 You do not have permission to access this.\r\n'
+                    self.conSoc.sendall(response.encode('ascii'))
+                    return
+            else: 
                 response='501 The directory does not exist \r\n'
                 self.conSoc.sendall(response.encode('ascii'))
                 return
@@ -514,8 +523,20 @@ class myThread (threading.Thread):
         return
 
     def CWD(self,newWd):
+        if (('..' in newWd) and self.user!='ADMIN' ):
+            response='530 You do not have permission to access this.\r\n'
+            self.conSoc.sendall(response.encode('ascii'))
+            return
+
         if('\\' not in newWd):#if not full path sent
             newWd=self.currentPath+'\\'+newWd
+        
+        if (self.corePath not in newWd and self.user!='ADMIN' ):
+            response='530 You do not have permission to access this.\r\n'
+            self.conSoc.sendall(response.encode('ascii'))
+            return
+
+       
 
         if(os.path.isdir(newWd) ):
             self.currentPath=newWd
@@ -569,6 +590,12 @@ class myThread (threading.Thread):
         if (os.path.exists(directory)):
             response='550 already exits\r\n'
             self.conSoc.sendall(response.encode('ascii'))
+            return
+
+        if (self.corePath not in directory and self.user!='ADMIN' ):
+            response='530 You do not have permission to access this.\r\n'
+            self.conSoc.sendall(response.encode('ascii'))
+            return
 
         try:
             os.mkdir(directory)

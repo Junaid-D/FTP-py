@@ -484,6 +484,7 @@ class GUIClient():
         try:
             self.FTPClient.login(username,password)
             if(self.FTPClient.loggedIn):
+                self.Log.delete('1.0', END)
                 self.Log.insert(END,'Logged in !\n')
                 self.loggedIn=True
                 self.loginBtn['state']='disabled'
@@ -508,6 +509,13 @@ class GUIClient():
         self.loginBtn['state']='disabled'
         self.connectBtn['state']='normal'
         self.quitBtn['state']='disabled'
+
+        self.Log.delete('1.0', END)
+
+        self.FileList.delete('1.0', END)
+
+        self.FileList.insert(END,'File/Dir          usr grp size \t Last modified \t filename \n')
+
         self.Log.insert(END,'Connection terminated.\n')
 
         return
