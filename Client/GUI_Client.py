@@ -8,8 +8,8 @@ from ttkthemes import ThemedTk
 
 
 
-class FTPClient():
-    def __init__(self):
+class FTPClient():#defines class used for backend implementation of ftp commands
+    def __init__(self):#initialises variables for client
         self.conSoc=None
         self.loggedIn=False
         self.open=True
@@ -22,12 +22,12 @@ class FTPClient():
         self.stru='F'
         self.textExtensions=None
         self.serverIP=None
-    def Connect(self,serverip,port):
+    def Connect(self,serverip,port):#attempts to connect to servewr on specified ip and port
         self.conSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         
         self.conSoc.connect((serverip,port))
         serverResp=''
-        while(serverResp==''):
+        while(serverResp==''):#waits for server response
             serverResp=self.conSoc.recv(1024).decode('ascii')
 
         self.serverIP=serverip
@@ -35,14 +35,14 @@ class FTPClient():
 
         return
 
-    def login(self,userName,password):
-        loginMessage='USER '+userName+'\r\n'
+    def login(self,userName,password):#attempts to log in
+        loginMessage='USER '+userName+'\r\n'#sends username
         print('C %s' % loginMessage)
         self.conSoc.sendall(loginMessage.encode('ascii'))
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s' % serverResp)
 
-        if(serverResp.startswith('331')):
+        if(serverResp.startswith('331')):#sends password after username is confirmed received
             loginMessage='PASS '+password+'\r\n'
             print('C %s' % loginMessage)
             self.conSoc.sendall(loginMessage.encode('ascii'))
@@ -52,18 +52,18 @@ class FTPClient():
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s' % serverResp)
 
-        if(serverResp.startswith('2')):
+        if(serverResp.startswith('2')):#waits for login confirmation from server
             self.loggedIn=True
             print("Login success!")
         
 
-    def QUIT(self):  
+    def QUIT(self):  #closes the connection
         message='QUIT\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
-        if(serverResp.startswith('221')):
+        if(serverResp.startswith('221')):#clears variables after server confirms connection closed
             self.loggedIn=False
             self.open=False
             print('Connection closed by server.')
@@ -71,7 +71,7 @@ class FTPClient():
             self.conSoc.close()
             return
 
-    def PORT(self,ip,portNo):
+    def PORT(self,ip,portNo):#sets the client in passive mode
         print('Requesting data port')
 
         splitIP=ip.split('.')
@@ -80,10 +80,10 @@ class FTPClient():
         #ip
         sequence=splitIP[0]+','+splitIP[1]+','+splitIP[2]+','+splitIP[3]    
         #port
-        sequence=sequence+','+str(port1)+','+str(port2)
+        sequence=sequence+','+str(port1)+','+str(port2)#formats the client ip details as needed
 
         self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.dataSoc.bind((ip,(int(portNo))))
+        self.dataSoc.bind((ip,(int(portNo))))#binds socket to listen for data from server
 
         message='PORT '+sequence+'\r\n'
         print('C %s'%message)
@@ -96,11 +96,11 @@ class FTPClient():
         return 0
 
 
-    def PASV(self):
+    def PASV(self):#sets the client in active mode
         message='PASV\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
-        serverResp=self.conSoc.recv(1024).decode('ascii')
+        serverResp=self.conSoc.recv(1024).decode('ascii')#requests ip information from server for data connection
         print('S %s'%serverResp)
         if(serverResp.startswith('2')):
             splitResp=serverResp[:-2]
@@ -110,14 +110,14 @@ class FTPClient():
             splitIP=splitIP.strip('().')
             splitIP=splitIP.split(",")
             self.passiveIP='.'.join(splitIP[:4])
-            self.passivePort=int(splitIP[4])*256+int(splitIP[5])
+            self.passivePort=int(splitIP[4])*256+int(splitIP[5])#formats the received ip data and sets the appropriate variables
         elif(serverResp.startswith('5')):
             print('Error with parameters, retuning to menu..')
         return  
 
 
     def RETR(self,filename):#stream--server will close connection, block-- eof block will be sent
-        
+        #attempt to get file from server
         message='RETR '+filename+'\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
@@ -128,9 +128,9 @@ class FTPClient():
             return 1
         
 
-        if(self.dataSoc!=None):##Assume active
+        if(self.dataSoc!=None):##Assume server is in active mode
             self.dataSoc.listen()
-            s1,addr=self.dataSoc.accept()
+            s1,addr=self.dataSoc.accept()#listen for connection on socket
             newFile=open('new_'+filename,"w"+self.type)
             if(self.mode=='S'):
                 while 1:
@@ -146,9 +146,9 @@ class FTPClient():
 
 
         
-        if(self.passiveIP!=None):##Assume Passive
+        if(self.passiveIP!=None):##Assume server is in Passive mode
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            self.dataSoc.connect((self.passiveIP,self.passivePort))
+            self.dataSoc.connect((self.passiveIP,self.passivePort))#request data on socket
             newFile=open('new_'+filename,"w"+self.type)
             if(self.mode=='S'):
                 while 1:
@@ -165,10 +165,10 @@ class FTPClient():
             self.dataSoc=None
             return 0
 
-    def STOR(self,filename):
+    def STOR(self,filename):#send file to and store on server
     
         
-        head, filenameOnServer = os.path.split(filename)
+        head, filenameOnServer = os.path.split(filename)#split filename to remove details of current computer
 
         message='STOR '+filenameOnServer+'\r\n'
         print('C %s'%message)
@@ -176,14 +176,14 @@ class FTPClient():
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
 
-        if(serverResp.startswith('2') == False):
+        if(serverResp.startswith('2') == False):#checks if transfer accepred
             return 1
 
 
-        if(self.dataSoc!=None):##Assume active
+        if(self.dataSoc!=None):##Assume server is active
 
             self.dataSoc.listen()
-            s1,addr=self.dataSoc.accept()
+            s1,addr=self.dataSoc.accept()#wait for server to initiate transfer
 
             with open(filename,"r"+self.type) as f:##read as binary
                 toSend=f.read(1024)#using send for now instead of sendall
@@ -199,9 +199,9 @@ class FTPClient():
             return 0
 
 
-        if(self.passiveIP!=None):##Assume Passive
+        if(self.passiveIP!=None):##Assume server is Passive
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            self.dataSoc.connect((self.passiveIP,self.passivePort))
+            self.dataSoc.connect((self.passiveIP,self.passivePort))#initiate data transfer with server
             with open(filename,"r"+self.type) as f:##read as binary
                 toSend=f.read(1024)#using send for now instead of sendall
                 while (toSend):
@@ -219,7 +219,7 @@ class FTPClient():
         return 1
         
  
-    def TYPE(self,type):
+    def TYPE(self,type):#sets whether files are read in ascii or binary
 
         message='TYPE '+type+'\r\n'
         print('C %s'%message)
@@ -229,13 +229,13 @@ class FTPClient():
 
         if(serverResp.startswith('2')):
             if(type=='I'):self.type='b'
-            else: self.type=''
+            else: self.type=''#defaults to binary if not explicitly ascii
             return 0 
         else:
             return 1
 
 
-    def MODE(self,mode):
+    def MODE(self,mode):#sets mode of transger
         message='MODE '+mode+'\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
@@ -243,26 +243,26 @@ class FTPClient():
         print('S %s'%serverResp)
 
         if(serverResp.startswith('2')):
-            if(mode=='S'):self.mode='S'
+            if(mode=='S'):self.mode='S'#sets to stream transfer mode
             return 0 
         else:
             return 1
         return
 
-    def STRU(self, stru):
+    def STRU(self, stru):#sets file structure to be ised
         message='STRU '+stru+'\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
         if(serverResp.startswith('2')):
-            if(stru=='F'):self.mode='S'
+            if(stru=='F'):self.stru='F'#sets to default file structure
             return 0 
         else:
             return 1
         return
 
-    def LIST(self,args):
+    def LIST(self,args):#attempts to obtain list of accesible files on server
         print(args)
         message = 'LIST '+args+'\r\n'
         print('C %s'%message)
@@ -277,7 +277,7 @@ class FTPClient():
 
         list=''
 
-        if(self.dataSoc!=None):##Assume active
+        if(self.dataSoc!=None):##Assume server is active
 
             self.dataSoc.listen()
             s1,addr=self.dataSoc.accept()
@@ -297,7 +297,7 @@ class FTPClient():
             return 0
 
 
-        if(self.passiveIP!=None):##Assume Passive
+        if(self.passiveIP!=None):##Assume server is passive Passive
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.dataSoc.connect((self.passiveIP,self.passivePort))
             
@@ -319,7 +319,7 @@ class FTPClient():
             return 0
        
 
-    def PWD(self):
+    def PWD(self):#attempts to have server print current directory
         message='PWD\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
@@ -327,7 +327,7 @@ class FTPClient():
         print('S %s'%serverResp)
         return serverResp[3:-2]
 
-    def CWD(self,newDir):
+    def CWD(self,newDir):#attempts to change directory on server
         message='CWD '+newDir+'\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
@@ -338,7 +338,7 @@ class FTPClient():
         else:
             return 1
 
-    def MKD(self,newDir):
+    def MKD(self,newDir):#attempts to make directory on server
         message='MKD '+newDir+'\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
@@ -349,23 +349,23 @@ class FTPClient():
         else:
             return 1
 
-    def NOOP(self):
+    def NOOP(self):#no operation. Keep connection alive
         message='NOOP\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
         return
-    def CloseDataSocket(self):
+    def CloseDataSocket(self):#close data socket
         self.dataSoc.close()
         self.dataSoc=None
         return
     
 
 
-class GUIClient():
+class GUIClient():#defines class for GUI to utilise FTPClient class functionality
 
-    def __init__(self,client):
+    def __init__(self,client):#initialises variables and buttons to default state
 
         ##some state vars
         self.connected=False
@@ -376,6 +376,7 @@ class GUIClient():
         self.window.title("FTP Client") 
         self.window.geometry('1200x640')
 
+        #button initialisation with all disabled except for connect
         self.connectBtn=ttk.Button(self.window, text="Connect",command=self.doConnect)        
         self.loginBtn = ttk.Button(self.window, text="Login",state=DISABLED,command=self.doLogin)
         self.quitBtn = ttk.Button(self.window, text="QUIT",state=DISABLED,command=self.doQUIT)
@@ -402,13 +403,13 @@ class GUIClient():
         self.retrBtn = ttk.Button(self.window, text = 'RETR',state=DISABLED, command=self.doRETR)
         self.storBtn = ttk.Button(self.window, text = 'STOR',state=DISABLED, command=self.doSTOR)
 
-
+        #initialises the visuals for text
         self.FileList=Text(self.window,height=20,width=70,background='gray42',fg='orange')
         self.Log=Text(self.window,height=20,width=40,background='gray42',fg='orange')
         self.FileList.insert(END,'File/Dir          usr grp size \t Last modified \t filename \n')
 
 
-
+        #places buttons on grid
         self.loginBtn.grid(column=1, row=1,pady=2,padx=10)
         self.connectBtn.grid(column=2, row=1,pady=2,padx=10)
         self.quitBtn.grid(column=1, row=2,pady=2,padx=10)
@@ -439,19 +440,19 @@ class GUIClient():
 
         self.window.mainloop()
 
-    def doPopUp(self,label,defaultVal=''):
+    def doPopUp(self,label,defaultVal=''):#create pop up for text for command
         popup1=popupWindow(self.window,label,defaultVal)
         self.window.wait_window(popup1.top)
         return popup1.value
 
-    def CheckExtension(self,file):
+    def CheckExtension(self,file):#checks extensions for type
         name,ext=os.path.splitext(file)
         print(ext)
-        if(ext not in self.textExtensions):
+        if(ext not in self.textExtensions):#binary
             self.FTPClient.TYPE("I")
-        else:
+        else:#ascii
             self.FTPClient.TYPE("A")
-    def loadExtensions(self):
+    def loadExtensions(self):#load extensions
         with open('extensions.txt') as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
             self.textExtensions=['.txt']
@@ -459,37 +460,38 @@ class GUIClient():
                 for ext in row:
                     self.textExtensions.append(ext)
         print(self.textExtensions)
-    def doConnect(self):
+    def doConnect(self):#attempt to connect to server
         
         serverIP=self.doPopUp('Enter IP','127.0.0.1')
-        port=self.doPopUp('Enter Port','21')
+        port=self.doPopUp('Enter Port','21')#default values
         try:
             self.FTPClient.Connect(serverIP,int(port))
             self.Log.insert(END,'Connected to Server. Login..\n')
             self.connected=True
-            self.connectBtn['state']='disabled'
-            self.loginBtn['state']='normal'
+            self.connectBtn['state']='disabled'#disable connect button
+            self.loginBtn['state']='normal'#enable login butotn
         except:
             self.Log.insert(END,'Could not Connect... Please check firewall settings or server status\n')
         
 
         return
 
-    def doLogin(self):
+    def doLogin(self):#attempts login
         self.loadExtensions()
+        #acquire login details from user
         username=self.doPopUp('Enter username','ADMIN')
 
         password=self.doPopUp('Enter password','ADMIN')
 
         try:
             self.FTPClient.login(username,password)
-            if(self.FTPClient.loggedIn):
+            if(self.FTPClient.loggedIn):#check if logged in
                 self.Log.delete('1.0', END)
                 self.Log.insert(END,'Logged in !\n')
                 self.loggedIn=True
-                self.loginBtn['state']='disabled'
-                self.quitBtn['state']='normal'
-                self.enableNonDataButtons()
+                self.loginBtn['state']='disabled'#disable login
+                self.quitBtn['state']='normal'#enable quit button
+                self.enableNonDataButtons()#enable buttons for interacting with server
             else:
                 self.disableNonDataButtons()
                 self.Log.insert(END,'Invalid login\n')
@@ -502,12 +504,12 @@ class GUIClient():
 
         return
 
-    def doQUIT(self):
+    def doQUIT(self):#initiate quitting conection
         self.FTPClient.QUIT()
-        self.disableDataButtons()
+        self.disableDataButtons()#disable buttons
         self.disableNonDataButtons()
         self.loginBtn['state']='disabled'
-        self.connectBtn['state']='normal'
+        self.connectBtn['state']='normal'#reset to only connect button available
         self.quitBtn['state']='disabled'
 
         self.Log.delete('1.0', END)
@@ -520,28 +522,28 @@ class GUIClient():
 
         return
 
-    def doTYPE(self):
+    def doTYPE(self):#call type of FTPCLient class
         type=self.doPopUp('Type? (I or A)','I')
         if( self.FTPClient.TYPE(type)==0):
             self.Log.insert(END,'Type set to '+type+'\n')
         else:
             self.Log.insert(END,'Could not complete\n')
     
-    def doMODE(self):
+    def doMODE(self):#call mode of ftpclient class
         mode=self.doPopUp('Mode? (S,B or C)','S')
         if(self.FTPClient.MODE(mode)==0):
             self.Log.insert(END,'Mode set to '+mode+'\n')
         else:
             self.Log.insert(END,'Could not complete\n')
 
-    def doSTRU(self):
+    def doSTRU(self):#call stru of ftpclient class
         ftype=self.doPopUp('Fileype?','F')
         if(self.FTPClient.STRU(ftype)==0):
             self.Log.insert(END,'Filetype set to '+ftype+'\n')
         else:
             self.Log.insert(END,'Could not complete\n')
 
-    def doPORT(self):
+    def doPORT(self):#set client to passive and server to active
         ip=self.doPopUp('Enter IP')
         port=self.doPopUp('Enter Port')
         try:
@@ -558,14 +560,14 @@ class GUIClient():
 
         return
     
-    def doPASV(self):
+    def doPASV(self):#set client to active and server to passive
         self.FTPClient.PASV()
         self.enableDataButtons()
         self.Log.insert(END,'Created Passive Data soc \n')
         self.Log.insert(END,'Passive at: '+self.FTPClient.passiveIP +':'+str(self.FTPClient.passivePort) +'\n')
         return
 
-    def doLIST(self):
+    def doLIST(self):#execute list command from ftpclient class
         dir=self.doPopUp('Enter dir (leave blank for current dir)','')
         try:
             if(self.FTPClient.LIST(dir)==0):
@@ -578,13 +580,13 @@ class GUIClient():
             self.Log.insert(END,'Could not obtain list \n')
 
         finally:
-            self.disableDataButtons()
+            self.disableDataButtons()#reset data buttons
 
 
 
         return
 
-    def doSTOR(self):
+    def doSTOR(self):#attempt to store file on server 
         filename =  filedialog.askopenfilename(initialdir = "/",title = "Select file",filetypes = [("all files","*.*")])
         print(filename)
         self.CheckExtension(filename)
@@ -598,12 +600,12 @@ class GUIClient():
         except:
             self.Log.insert(END, 'Could not upload \n')
         finally:
-            self.disableDataButtons()
+            self.disableDataButtons()#reset data buttons
 
 
         return
 
-    def doRETR(self):
+    def doRETR(self):#attempt to retrieve file from server
         filename=self.doPopUp('Filename?')
         self.CheckExtension(filename)
         try:
@@ -621,7 +623,7 @@ class GUIClient():
 
         return
 
-    def doPWD(self):
+    def doPWD(self):#get working directory from server
 
         try:
             curerntPath=self.FTPClient.PWD()
@@ -630,7 +632,7 @@ class GUIClient():
             self.Log.insert(END,'Could not retrieve cwd...\n')
         return
 
-    def doCWD(self):
+    def doCWD(self):#attempt to chagne wroking directory on server
         newDir=self.doPopUp('Directory?')
 
         try:
@@ -643,7 +645,7 @@ class GUIClient():
             self.Log.insert(END,'Could not change dir\n')
         return
 
-    def doMKD(self):
+    def doMKD(self):#attempt to make directory on server
         newDir=self.doPopUp('Directory?')
 
         try:
@@ -658,20 +660,20 @@ class GUIClient():
     
 
 
-    def enableDataButtons(self):
+    def enableDataButtons(self):#enable buttons related to using data connection
         self.listBtn['state']='normal'
         self.retrBtn['state']='normal'
         self.storBtn['state']='normal'
 
 
-    def disableDataButtons(self):
+    def disableDataButtons(self):#disable buttons related to using data connection
         self.listBtn['state']='disabled'
         self.retrBtn['state']='disabled'
         self.storBtn['state']='disabled'
 
 
     
-    def enableNonDataButtons(self):
+    def enableNonDataButtons(self):#enable buttons related to using control connection
         self.portBtn['state']='normal'
         self.pasvbBtn['state']='normal'
         self.typeBtn['state']='normal'
@@ -682,7 +684,7 @@ class GUIClient():
         self.struBtn['state']='normal'
 
     
-    def disableNonDataButtons(self):
+    def disableNonDataButtons(self):#disable buttons related to using control connection
         self.portBtn['state']='disabled'
         self.pasvbBtn['state']='disabled'
         self.typeBtn['state']='disabled'
@@ -696,7 +698,7 @@ class GUIClient():
 
 
 class popupWindow(object):
-    def __init__(self,master,title,default=''):
+    def __init__(self,master,title,default=''):#initialise gui window
         top=self.top=Toplevel(master,width=100,height=100)
         top.configure(background='gray42')
         top.after('1',lambda: top.focus_force())
