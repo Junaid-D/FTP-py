@@ -22,7 +22,7 @@ class FTPClient():#defines class used for backend implementation of ftp commands
         self.stru='F'
         self.textExtensions=None
         self.serverIP=None
-    def Connect(self,serverip,port):#attempts to connect to servewr on specified ip and port
+    def Connect(self,serverip,port):#attempts to connect to servewr on specified ip and port #This was written by Junaid Dawood 1094837
         self.conSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         
         self.conSoc.connect((serverip,port))
@@ -35,7 +35,7 @@ class FTPClient():#defines class used for backend implementation of ftp commands
 
         return
 
-    def login(self,userName,password):#attempts to log in
+    def login(self,userName,password):#attempts to log in #This was written by Junaid Dawood 1094837
         loginMessage='USER '+userName+'\r\n'#sends username
         print('C %s' % loginMessage)
         self.conSoc.sendall(loginMessage.encode('ascii'))
@@ -57,7 +57,7 @@ class FTPClient():#defines class used for backend implementation of ftp commands
             print("Login success!")
         
 
-    def QUIT(self):  #closes the connection
+    def QUIT(self):  #closes the connection #This was written by Junaid Dawood 1094837
         message='QUIT\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
@@ -71,7 +71,7 @@ class FTPClient():#defines class used for backend implementation of ftp commands
             self.conSoc.close()
             return
 
-    def PORT(self,ip,portNo):#sets the client in passive mode
+    def PORT(self,ip,portNo):#sets the client in passive mode #This was written by Junaid Dawood 1094837
         print('Requesting data port')
 
         splitIP=ip.split('.')
@@ -96,7 +96,7 @@ class FTPClient():#defines class used for backend implementation of ftp commands
         return 0
 
 
-    def PASV(self):#sets the client in active mode
+    def PASV(self):#sets the client in active mode #This was written by Xongile Nghatsane 1110680
         message='PASV\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
@@ -124,11 +124,11 @@ class FTPClient():#defines class used for backend implementation of ftp commands
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
 
-        if(serverResp.startswith('2') == False):
+        if(serverResp.startswith('2') == False):#Error handling written by Junaid Dawood 1094837
             return 1
         
 
-        if(self.dataSoc!=None):##Assume server is in active mode
+        if(self.dataSoc!=None):##Assume server is in active mode #This was written by Junaid Dawood 1094837
             self.dataSoc.listen()
             s1,addr=self.dataSoc.accept()#listen for connection on socket
             newFile=open('new_'+filename,"w"+self.type)
@@ -146,7 +146,7 @@ class FTPClient():#defines class used for backend implementation of ftp commands
 
 
         
-        if(self.passiveIP!=None):##Assume server is in Passive mode
+        if(self.passiveIP!=None):##Assume server is in Passive mode #This was written by Xongile Nghatsane 1110680
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.dataSoc.connect((self.passiveIP,self.passivePort))#request data on socket
             newFile=open('new_'+filename,"w"+self.type)
@@ -176,11 +176,11 @@ class FTPClient():#defines class used for backend implementation of ftp commands
         serverResp=self.conSoc.recv(1024).decode('ascii')
         print('S %s'%serverResp)
 
-        if(serverResp.startswith('2') == False):#checks if transfer accepred
+        if(serverResp.startswith('2') == False):#checks if transfer accept #Error handling written by Junaid Dawood 1094837
             return 1
 
 
-        if(self.dataSoc!=None):##Assume server is active
+        if(self.dataSoc!=None):##Assume server is active #This was written by Junaid Dawood 1094837
 
             self.dataSoc.listen()
             s1,addr=self.dataSoc.accept()#wait for server to initiate transfer
@@ -199,7 +199,7 @@ class FTPClient():#defines class used for backend implementation of ftp commands
             return 0
 
 
-        if(self.passiveIP!=None):##Assume server is Passive
+        if(self.passiveIP!=None):##Assume server is Passive #This was written by Xongile Nghatsane 1110680
             self.dataSoc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.dataSoc.connect((self.passiveIP,self.passivePort))#initiate data transfer with server
             with open(filename,"r"+self.type) as f:##read as binary
@@ -219,7 +219,7 @@ class FTPClient():#defines class used for backend implementation of ftp commands
         return 1
         
  
-    def TYPE(self,type):#sets whether files are read in ascii or binary
+    def TYPE(self,type):#sets whether files are read in ascii or binary #This was written by Xongile Nghatsane 1110680
 
         message='TYPE '+type+'\r\n'
         print('C %s'%message)
@@ -235,7 +235,7 @@ class FTPClient():#defines class used for backend implementation of ftp commands
             return 1
 
 
-    def MODE(self,mode):#sets mode of transger
+    def MODE(self,mode):#sets mode of transfer #This was written by Xongile Nghatsane 1110680
         message='MODE '+mode+'\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
@@ -249,7 +249,7 @@ class FTPClient():#defines class used for backend implementation of ftp commands
             return 1
         return
 
-    def STRU(self, stru):#sets file structure to be ised
+    def STRU(self, stru):#sets file structure to be used #This was written by Xongile Nghatsane 1110680
         message='STRU '+stru+'\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
@@ -262,7 +262,7 @@ class FTPClient():#defines class used for backend implementation of ftp commands
             return 1
         return
 
-    def LIST(self,args):#attempts to obtain list of accesible files on server
+    def LIST(self,args):#attempts to obtain list of accesible files on server #This was written by Junaid Dawood 1094837
         print(args)
         message = 'LIST '+args+'\r\n'
         print('C %s'%message)
@@ -319,7 +319,7 @@ class FTPClient():#defines class used for backend implementation of ftp commands
             return 0
        
 
-    def PWD(self):#attempts to have server print current directory
+    def PWD(self):#attempts to have server print current directory #This was written by Junaid Dawood 1094837
         message='PWD\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
@@ -327,7 +327,7 @@ class FTPClient():#defines class used for backend implementation of ftp commands
         print('S %s'%serverResp)
         return serverResp[3:-2]
 
-    def CWD(self,newDir):#attempts to change directory on server
+    def CWD(self,newDir):#attempts to change directory on server #This was written by Junaid Dawood 1094837
         message='CWD '+newDir+'\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
@@ -338,7 +338,7 @@ class FTPClient():#defines class used for backend implementation of ftp commands
         else:
             return 1
 
-    def MKD(self,newDir):#attempts to make directory on server
+    def MKD(self,newDir):#attempts to make directory on server #This was written by Junaid Dawood 1094837
         message='MKD '+newDir+'\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
@@ -349,7 +349,7 @@ class FTPClient():#defines class used for backend implementation of ftp commands
         else:
             return 1
 
-    def NOOP(self):#no operation. Keep connection alive
+    def NOOP(self):#no operation. Keep connection alive #This was written by Junaid Dawood 1094837
         message='NOOP\r\n'
         print('C %s'%message)
         self.conSoc.sendall(message.encode('ascii'))
@@ -363,7 +363,7 @@ class FTPClient():#defines class used for backend implementation of ftp commands
     
 
 
-class GUIClient():#defines class for GUI to utilise FTPClient class functionality
+class GUIClient():#defines class for GUI to utilise FTPClient class functionality #GUI was written by Junaid Dawood 1094837, except for automated type checks
 
     def __init__(self,client):#initialises variables and buttons to default state
 
@@ -445,7 +445,7 @@ class GUIClient():#defines class for GUI to utilise FTPClient class functionalit
         self.window.wait_window(popup1.top)
         return popup1.value
 
-    def CheckExtension(self,file):#checks extensions for type
+    def CheckExtension(self,file):#checks extensions for type #Automated type checking written by Xongile Nghatsane 1110680
         name,ext=os.path.splitext(file)
         print(ext)
         if(ext not in self.textExtensions):#binary

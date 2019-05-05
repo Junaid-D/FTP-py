@@ -10,7 +10,7 @@ host = '127.0.0.1'
 port = 4500
 
 class myThread (threading.Thread):
-    def __init__(self, threadID,conSoc,dest):#initialises relevenat server variables
+    def __init__(self, threadID,conSoc,dest):#initialises relevenat server variables , written by both
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.conSoc=conSoc
@@ -36,7 +36,7 @@ class myThread (threading.Thread):
         self.runServer()
      
 
-    def verifyUser(self): #user authentication
+    def verifyUser(self): #user authentication #This was written by Junaid Dawood 1094837
         if((self.user,self.password) in self.credentials):#checks if the users details are present in the authentication file
             self.authorized=True
         else:
@@ -62,7 +62,7 @@ class myThread (threading.Thread):
 
                     receivedData=self.parseCommand(decoded)    #parses command to be used
                     print("Received",receivedData)
-                    if receivedData[0]=='QUIT':
+                    if receivedData[0]=='QUIT':#This was written by both students
                         self.QUIT()
                     elif receivedData[0]=='PORT':
                         self.PORT(receivedData[1])
@@ -96,11 +96,11 @@ class myThread (threading.Thread):
                         self.UNKNOWN()#if command not implemented
 
 
-    def UNKNOWN(self):#alerts that command requested is not implemented
+    def UNKNOWN(self):#alerts that command requested is not implemented #This was written by Junaid Dawood 1094837
         message='502 Command not implemented\r\n'
         self.conSoc.sendall(message.encode('ascii'))               
 
-    def parseCommand(self,recCommand):#parses command
+    def parseCommand(self,recCommand):#parses command #This was written by Junaid Dawood 1094837
         splitStr=recCommand[:-2]#removes eol characters
         splitStr=splitStr.split(' ',3)
         splitStr[0]=splitStr[0].upper()
@@ -108,7 +108,7 @@ class myThread (threading.Thread):
             return [splitStr[0],'']
         return splitStr
 
-    def ReadCredentials(self):#load credentials file and place result in variable
+    def ReadCredentials(self):#load credentials file and place result in variable #This was written by Junaid Dawood 1094837
         with open('logins.txt') as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
             self.credentials=[('ADMIN','ADMIN')]#adds default admin profile
@@ -116,7 +116,7 @@ class myThread (threading.Thread):
                 self.credentials.append((row[0],row[1]))
         print(self.credentials)
 
-    def ReadExtensions(self):#load extensions file and place result in variable
+    def ReadExtensions(self):#load extensions file and place result in variable, written by Xongile Nghatsane 1110680
         with open('extensions.txt') as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
             self.textExtensions=['.txt']#adds default text extension
@@ -124,7 +124,7 @@ class myThread (threading.Thread):
                 for ext in extList:
                     self.textExtensions.append(ext)
 
-    def CheckExtension(self,file):#checks if extension is of text based document
+    def CheckExtension(self,file):#checks if extension is of text based document, written by Xongile Nghatsane 1110680
 
         if(self.type=='b'):##binary should be compatible with all
             return True
@@ -132,13 +132,13 @@ class myThread (threading.Thread):
         name,ext=os.path.splitext(file)
         return (ext in self.textExtensions)
 
-    def SendExtension(self,soc):#sends extensions to user to configure type
+    def SendExtension(self,soc):#sends extensions to user to configure type , written by Xongile Nghatsane 1110680
         for ext in self.textExtensions:
             toSend=ext
             toSend=toSend.encode('ascii')
             soc.send(toSend)
 
-    def USER(self):#gets username and stores in variable
+    def USER(self):#gets username and stores in variable #This was written by Junaid Dawood 1094837
         rec_data=self.conSoc.recv(1024)
         response=self.parseCommand(rec_data.decode('ascii'))
         print('C %s'%response)
@@ -150,7 +150,7 @@ class myThread (threading.Thread):
         self.PASS()
 
 
-    def PASS(self):#gets userpass for checking authentication
+    def PASS(self):#gets userpass for checking authentication #This was written by Junaid Dawood 1094837
         rec_data=self.conSoc.recv(1024)
         response=self.parseCommand(rec_data.decode('ascii'))
         print('C ',response)
@@ -170,14 +170,14 @@ class myThread (threading.Thread):
             response='430 Invalid login\r\n'
             self.conSoc.sendall(response.encode('ascii'))
 
-    def QUIT(self):#closes connection
+    def QUIT(self):#closes connection #This was written by Junaid Dawood 1094837
         response='221 Service closing control connection\r\n'
         self.conSoc.sendall(response.encode('ascii'))
         self.open=False
         print('Server is shutting down for user %s'%self.user)    
 
 
-    def PORT(self,args):#sets the server into active mode
+    def PORT(self,args):#sets the server into active mode #This was written by Junaid Dawood 1094837
         splitArgs=args.split(',')
         if(len(splitArgs)!=6):#checks if input is valid
             response='501 Syntax error in parameters or arguments\r\n'
@@ -190,7 +190,7 @@ class myThread (threading.Thread):
         self.activePort=port
         #do not use data port immediately
 
-    def PASV(self):#sets the server into passive mode
+    def PASV(self):#sets the server into passive mode, written by Xongile Nghatsane 1110680
         print('Initiating passive data port')
         self.passiveIP=host
         self.passivePort=random.randint(self.portRange[0],self.portRange[1])#obtains random port from a range
@@ -208,11 +208,11 @@ class myThread (threading.Thread):
             
         self.conSoc.sendall(message.encode('ascii'))#sends relevant information to client
 
-    def NOOP(self):#no operation
+    def NOOP(self):#no operation #This was written by Junaid Dawood 1094837
         response = '200 NOOP Done\r\n'
         self.conSoc.sendall(response.encode('ascii'))
 
-    def TYPE(self,newType):#determines the type of encoding used
+    def TYPE(self,newType):#determines the type of encoding used, written by Xongile Nghatsane 1110680
         newType=newType.upper()
         types=['A','I']#types are ascii for text based documents and binary for everything else
         if(newType not in types):
@@ -233,7 +233,7 @@ class myThread (threading.Thread):
         response = '200 Type Altered\r\n'
         self.conSoc.sendall(response.encode('ascii'))#sends appropriate response
 
-    def STOR(self,filename):#allows client to send to and store files on the server
+    def STOR(self,filename):#allows client to send to and store files on the server 
         if(filename==''):#ensures valid filename
             fileErr='501 No filename given\r\n'
             self.conSoc.sendall(fileErr.encode('ascii'))
@@ -242,9 +242,9 @@ class myThread (threading.Thread):
             encodingError='550 Incompatible type encoding.\r\n'
             self.conSoc.sendall(encodingError.encode('ascii'))
             return
+    #error checking was written by Junaid Dawood 1094837
 
-
-        ###active
+        ###active #This was written by Junaid Dawood 1094837
         if(self.activeIP is not None):#checks if active is set up.
             try:
                 newFile=open(self.currentPath+'\\'+'new_onserver_'+filename,"w"+self.type)#checks if file can be created
@@ -276,7 +276,7 @@ class myThread (threading.Thread):
             return
 
 
-        ###PASSIVE
+        ###PASSIVE written by Xongile Nghatsane 1110680
         if (self.dataSoc is not None):#checks if passive is set up
             try:
                 newFile=open(self.currentPath+'\\'+'new_onserver_'+filename,"w"+self.type)
@@ -302,7 +302,7 @@ class myThread (threading.Thread):
                     if (self.type==''): data=data.decode('ascii')
                     newFile.write(data)
             newFile.close() 
-            self.dataSoc.close())#close data socket
+            self.dataSoc.close()#close data socket
             self.dataSoc=None 
             self.passiveIP=None
             self.passivePort=None
@@ -311,6 +311,7 @@ class myThread (threading.Thread):
         ##nothing
         noDataCon='425 Data connection was never created\r\n'#passive and active not set
         self.conSoc.sendall(noDataCon.encode('ascii'))
+        #error checking was written by Junaid Dawood 1094837
 
 
 
@@ -339,7 +340,9 @@ class myThread (threading.Thread):
             return
             ####early exits
 
-        ###active
+    #error checking was written by Junaid Dawood 1094837
+
+        ###active written by Junaid Dawood 1094837
         if(self.activeIP is not None):#sends data using active connection
             transferAccept='250 Accepted\r\n'
             self.conSoc.sendall(transferAccept.encode('ascii'))
@@ -358,7 +361,7 @@ class myThread (threading.Thread):
             self.activePort=None
 
 
-       ###passive
+       ###passive written by Xongile Nghatsane 1110680
         if (self.dataSoc is not None):
             transferAccept='250 Accepted\r\n'
             self.conSoc.sendall(transferAccept.encode('ascii'))
@@ -384,28 +387,29 @@ class myThread (threading.Thread):
         noDataCon='425 Data connection was never created\r\n'
         self.conSoc.sendall(noDataCon.encode('ascii'))
         
+    #error checking was written by Junaid Dawood 1094837
 
-    def CloseDataSoc(self):#closes data socket
+    def CloseDataSoc(self):#closes data socket written by Junaid Dawood 1094837
         self.dataSoc.shutdown(socket.SHUT_RDWR)
         self.dataSoc.close()
         self.dataSoc=None
         return
 
-    def SYST(self):#identifies OS server is running on
+    def SYST(self):#identifies OS server is running on written by Junaid Dawood 1094837
         response='200 Windows\r\n'
         self.conSoc.sendall(response.encode('ascii'))   
 
-    def FEAT(self):#identifies operations user can use
+    def FEAT(self):#identifies operations user can use; written by Junaid Dawood 1094837 #NB this is not used
         response='211 RETR PORT SYST PWD\r\n'
         self.conSoc.sendall(response.encode('ascii'))     
          
-    def PWD(self):#prints current directory
+    def PWD(self):#prints current directory #written by Junaid Dawood 1094837
         path = self.currentPath
         response='257 '+path+'\r\n'
         self.conSoc.sendall(response.encode('ascii'))
         return
 
-    def LIST(self,args):#lists files in current or specified directory
+    def LIST(self,args):#lists files in current or specified directory #written by Junaid Dawood 1094837
         
         if(args==''):
             files=os.listdir(self.currentPath)
@@ -455,7 +459,7 @@ class myThread (threading.Thread):
             print(lineStr)
             toSend+=lineStr
 
-        ##active
+        ##active 
         if(self.activeIP is not None):#sends data using active connection
             print('List sent')
             transferAccept='226 Accepted\r\n'
@@ -498,7 +502,7 @@ class myThread (threading.Thread):
         
         return
 
-    def CWD(self,newWd):#change working directory
+    def CWD(self,newWd):#change working directory #written by Junaid Dawood 1094837
         if (('..' in newWd) and self.user!='ADMIN' ):#restricts non admins from browsing upwards
             response='530 You do not have permission to access this.\r\n'
             self.conSoc.sendall(response.encode('ascii'))
@@ -526,7 +530,7 @@ class myThread (threading.Thread):
         return
 
 
-    def MODE(self,newMode):# defines mode of transfer.
+    def MODE(self,newMode):# defines mode of transfer. written by Xongile Nghatsane 1110680
         newMode=newMode.upper()
         modes=['S']#only stream transfer mode implemented
         if(newMode not in modes):
@@ -543,7 +547,7 @@ class myThread (threading.Thread):
         self.conSoc.sendall(response.encode('ascii'))
 
 
-    def STRU(self,newStru):#defines file structure
+    def STRU(self,newStru):#defines file structure, written by Xongile Nghatsane 1110680
         newStru=newStru.upper()
         strus=['F']#only file structure implemented
         if(newStru not in strus):
@@ -559,7 +563,7 @@ class myThread (threading.Thread):
         response = '200 Structure Altered\r\n'
         self.conSoc.sendall(response.encode('ascii'))
 
-    def MKD(self,directory):#make directory
+    def MKD(self,directory):#make directory #written by Junaid Dawood 1094837
         if('\\' not in directory):#if not full path sent
             directory=self.currentPath+'\\'+directory
 
