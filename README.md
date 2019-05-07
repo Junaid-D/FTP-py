@@ -15,6 +15,8 @@ The installation can be verified by running `setup.py`
 
 The server and client reside in separate folders, please `cd` to those folders before running the scripts (You will need two terminals if running on one machine). Not `cd`'ing into the folders before running the server/client will cause errors.
 
+
+
 Client:
 
 `cd Client`
@@ -25,6 +27,7 @@ Please do not use the CL client as its functionality has not been updated.
 
 The client can be used by interacting with the given buttons and supplying appropriate inputs in pop-ups. These buttons are selectively enabled/disabled: if a button is disabled it means that a prior action must be taken e.g. do a PASV before RETR.
 
+You must first connect to a server then login before sending any other commands. Note that logins can be found in the server folder in the `logins.txt` file.
 
 Server:
 
